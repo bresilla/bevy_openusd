@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M26 fixture: UsdLuxLightAPI light:link, shadow:link, light:filters rels."
+)
+
+def Xform "World"
+{
+    def Xform "StageLeft"
+    {
+        def Cube "A" { double size = 1 }
+    }
+
+    def Xform "StageRight"
+    {
+        def Cube "B" { double size = 1 }
+    }
+
+    def DistantLight "KeyLight"
+    {
+        float inputs:intensity = 3000
+        color3f inputs:color = (1, 0.95, 0.9)
+        # Only illuminate StageLeft; shadow geometry is StageRight.
+        rel light:link = [</World/StageLeft>]
+        rel shadow:link = [</World/StageRight>]
+    }
+
+    def DistantLight "FillLight"
+    {
+        float inputs:intensity = 800
+        # No linking — illuminates everything (default).
+    }
+}

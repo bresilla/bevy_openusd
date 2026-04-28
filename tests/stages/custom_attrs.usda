@@ -1,0 +1,36 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M24 fixture: custom attributes + userProperties:* namespaced attrs."
+)
+
+def Xform "World"
+{
+    def Cube "Robot" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 1.0
+
+        # Schema-adjacent custom scalars (would belong to a tool config).
+        custom float userProperties:max_speed = 2.5
+        custom int userProperties:priority = 7
+        custom string userProperties:name = "cart_01"
+        custom bool userProperties:active = true
+
+        # Domain-specific config — nav-graph integration hints.
+        custom color3f arena:tint = (0.85, 0.55, 0.1)
+
+        # A regular schema attribute that is NOT custom — should be
+        # filtered out by read_custom_attrs.
+        double3 xformOp:translate = (0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "Plain"
+    {
+        double size = 0.5
+    }
+}

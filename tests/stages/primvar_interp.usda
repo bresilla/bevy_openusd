@@ -1,0 +1,78 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M21 fixture: all five primvar interpolation modes on UsdGeomMesh.displayColor."
+)
+
+def Xform "World"
+{
+    # Constant: one RGB applied to every vertex of the quad.
+    def Mesh "Constant"
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        color3f[] primvars:displayColor = [(1, 0, 0)] (
+            interpolation = "constant"
+        )
+    }
+
+    # Uniform: one RGB per face. Two-face quad (split into two tris
+    # conceptually but authored as two quads) picks up two values.
+    def Mesh "Uniform"
+    {
+        int[] faceVertexCounts = [4, 4]
+        int[] faceVertexIndices = [0, 1, 2, 3, 2, 1, 4, 5]
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0), (2, 0, 0), (2, 1, 0)]
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 0, 1)] (
+            interpolation = "uniform"
+        )
+        double3 xformOp:translate = (2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # Vertex: one RGB per vertex — the classic four-corner colour gradient.
+    def Mesh "Vertex"
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0)] (
+            interpolation = "vertex"
+        )
+        double3 xformOp:translate = (5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # Varying: semantically like Vertex for polygonal meshes — behaves
+    # the same at runtime, but we still want the reader to round-trip
+    # the authored interpolation mode correctly.
+    def Mesh "Varying"
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0)] (
+            interpolation = "varying"
+        )
+        double3 xformOp:translate = (8, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # FaceVarying: one RGB per face-corner (4 corners × 1 face = 4).
+    # Different colours at the seam verts are NOT shared — this is the
+    # expansion case that forces the build_expanded path.
+    def Mesh "FaceVarying"
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0)] (
+            interpolation = "faceVarying"
+        )
+        double3 xformOp:translate = (11, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

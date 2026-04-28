@@ -1,0 +1,19 @@
+[package]
+name = "usd_schemas"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+description = "Schema-authoring helpers (UsdGeom / UsdPhysics / UsdShade) layered on top of the spec-level `openusd` crate."
+repository = "https://github.com/bresilla/urdf2usd"
+keywords = ["usd", "openusd", "schema", "usdgeom", "usdphysics"]
+categories = ["graphics", "rendering::data-formats"]
+
+[dependencies]
+# Spec-level (Sdf) reader/writer. We provide the schema layer on top.
+openusd = { git = "https://github.com/mxpv/openusd", branch = "main" }
+anyhow = "1"
+# Used by `xform` to compose USD's xformOpOrder stack into a single 4×4
+# matrix and decompose to TRS — needed to handle Pixar's pivot rotation
+# pattern (`xformOp:translate:pivot` + `!invert!xformOp:translate:pivot`)
+# which can't be expressed by overwriting a single Transform's fields.
+glam = "0.30"

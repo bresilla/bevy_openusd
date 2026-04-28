@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "Read-side coverage for UsdMediaSpatialAudio + UsdProcGenerativeProcedural."
+)
+
+def Xform "World"
+{
+    # Two SpatialAudio sources: one looping, one one-shot.
+    def SpatialAudio "Bell"
+    {
+        asset filePath = @sounds/bell.wav@
+        token auralMode = "spatial"
+        token playbackMode = "loopFromStart"
+        double gain = 0.8
+        double3 xformOp:translate = (-1.0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def SpatialAudio "Click"
+    {
+        asset filePath = @sounds/click.wav@
+        token auralMode = "spatial"
+        token playbackMode = "onceFromStart"
+        double gain = 1.0
+        double3 xformOp:translate = (1.0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # A generic procedural prim. We can't execute it — but we surface
+    # the type identifier so a downstream tool / chip can flag it.
+    def GenerativeProcedural "Forest"
+    {
+        token info:procedural:type = "HoudiniProcedural"
+        token proceduralSystem = "houdini"
+        double3 xformOp:translate = (0, 0.0, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # A plain Cube for a baseline — neither audio nor procedural.
+    def Cube "Plain"
+    {
+        double size = 0.4
+        double3 xformOp:translate = (0, 0.2, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

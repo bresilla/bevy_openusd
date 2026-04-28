@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M14 fixture: two instanceable prims with identical subtrees + one non-instanceable control."
+)
+
+def Xform "World"
+{
+    def Xform "InstanceA" (
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (-1.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "Body"
+        {
+            double size = 0.5
+        }
+    }
+
+    def Xform "InstanceB" (
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (1.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "Body"
+        {
+            double size = 0.5
+        }
+    }
+
+    def Xform "Unique" (
+        instanceable = false
+    )
+    {
+        double3 xformOp:translate = (0, 2, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "Body"
+        {
+            double radius = 0.3
+        }
+    }
+}

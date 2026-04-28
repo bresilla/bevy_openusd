@@ -1,0 +1,77 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M24-extended fixture: exhaustive coverage of custom attrs, nested customData, assetInfo, and customLayerData."
+
+    # Layer-level customLayerData — typical Omniverse bookmark stash.
+    customLayerData = {
+        string authoring_tool = "bevy_openusd-test"
+        dictionary camera_bookmarks = {
+            dictionary Front = {
+                double focal = 50
+                double3 position = (0, 0, 5)
+            }
+        }
+        int layer_version = 3
+    }
+)
+
+def Xform "World" (
+    assetInfo = {
+        asset identifier = @./custom_attrs_extensive.usda@
+        string name = "TestScene"
+        string version = "0.1.0"
+    }
+    customData = {
+        string scene_author = "dev"
+        dictionary rmf = {
+            string map_name = "greenhouse"
+            int fleet_count = 3
+            float3 origin = (0, 0, 0)
+        }
+    }
+)
+{
+    def Cube "Robot" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+        customData = {
+            int spawn_priority = 2
+            string capability = "pick_and_place"
+        }
+    )
+    {
+        double size = 1.0
+
+        # ── Scalars ────────────────────────────────────────────────
+        custom bool   userProperties:active       = true
+        custom uchar  userProperties:channel      = 7
+        custom int    userProperties:priority     = 7
+        custom uint   userProperties:queue_depth  = 128
+        custom int64  userProperties:tick_count   = 99999
+        custom uint64 userProperties:serial       = 18446744073709551610
+        custom float  userProperties:max_speed    = 2.5
+        custom double userProperties:mass_kg      = 12.75
+
+        # ── String-like ────────────────────────────────────────────
+        custom string   userProperties:name       = "cart_01"
+        custom token    userProperties:kind       = "mobile_base"
+        custom asset    userProperties:config     = @./config.yaml@
+
+        # ── Tuples ─────────────────────────────────────────────────
+        custom float2 userProperties:size_2d      = (1.2, 0.8)
+        custom double3 userProperties:base_offset = (0.0, 0.05, 0.0)
+        custom int3   userProperties:grid_cell    = (4, 0, 2)
+        custom float4 userProperties:padding      = (1, 2, 3, 4)
+        custom color3f arena:tint                 = (0.85, 0.55, 0.1)
+
+        # ── Quaternion ─────────────────────────────────────────────
+        custom quatf userProperties:orient        = (1, 0, 0, 0)
+
+        # ── Arrays ─────────────────────────────────────────────────
+        custom int[] userProperties:waypoint_ids  = [3, 7, 12, 42]
+        custom float[] userProperties:gains       = [1.0, 0.5, 0.1]
+        custom string[] userProperties:tags       = ["autonomous", "priority"]
+    }
+}

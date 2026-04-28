@@ -1,0 +1,117 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    upAxis = "Y"
+    metersPerUnit = 1
+    startTimeCode = 0
+    endTimeCode = 240
+    timeCodesPerSecond = 24
+    framesPerSecond = 24
+    doc = "Multi-object animated scene. Demonstrates the playback clock driving multiple time-sampled scalar xformOps in parallel: a fast-spinning cube, a slow-spinning sphere, an X/Y rotating cone-of-cylinder, and a Z-tilting cylinder. 10-second cycle (240 frames @ 24fps); cubes/spheres at fixed positions so the animation channel is the visible difference. Single-axis (scalar) timeSamples only — openusd-rs's USDA parser doesn't yet round-trip tuple-valued samples (vec3 translations, quat rotations), which is why no translate-animation here."
+)
+
+def Xform "Scene"
+{
+    def Cube "FastCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.8
+        color3f[] primvars:displayColor = [(0.3, 0.7, 1.0)]
+
+        # Y-spin: 4 full revolutions in 10s (one per 60 frames).
+        float xformOp:rotateY.timeSamples = {
+            0: 0,
+            60: 360,
+            120: 720,
+            180: 1080,
+            240: 1440,
+        }
+        double3 xformOp:translate = (-3.0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+    }
+
+    def Sphere "SlowSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double radius = 0.5
+        color3f[] primvars:displayColor = [(1.0, 0.4, 0.4)]
+
+        # Y-spin slow: 1 revolution in 10s.
+        float xformOp:rotateY.timeSamples = {
+            0: 0,
+            60: 90,
+            120: 180,
+            180: 270,
+            240: 360,
+        }
+        double3 xformOp:translate = (-1.0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+    }
+
+    def Cylinder "TiltingCylinder" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double radius = 0.3
+        double height = 1.4
+        uniform token axis = "Y"
+        color3f[] primvars:displayColor = [(0.4, 0.9, 0.3)]
+
+        # X-tilt back-and-forth between -45 and +45 every 60 frames.
+        float xformOp:rotateX.timeSamples = {
+            0:    0,
+            15:  -45,
+            30:    0,
+            45:   45,
+            60:    0,
+            75:  -45,
+            90:    0,
+            105:  45,
+            120:   0,
+            135: -45,
+            150:   0,
+            165:  45,
+            180:   0,
+            195: -45,
+            210:   0,
+            225:  45,
+            240:   0,
+        }
+        double3 xformOp:translate = (1.0, 0.7, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+    }
+
+    def Cube "TumblingCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.6
+        color3f[] primvars:displayColor = [(1.0, 0.85, 0.2)]
+
+        # Compound rotation: X axis spins fast, Z axis spins slow — cube
+        # appears to tumble end-over-end while flipping.
+        float xformOp:rotateX.timeSamples = {
+            0: 0,
+            120: 720,
+            240: 1440,
+        }
+        float xformOp:rotateZ.timeSamples = {
+            0: 0,
+            240: 360,
+        }
+        double3 xformOp:translate = (3.0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX", "xformOp:rotateZ"]
+    }
+
+    def Plane "Ground" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double width = 10.0
+        double length = 10.0
+        uniform token axis = "Y"
+        color3f[] primvars:displayColor = [(0.25, 0.27, 0.30)]
+    }
+}

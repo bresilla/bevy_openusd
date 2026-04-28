@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "NURBS curves: cubic open clamped + quadratic. Sampled via De Boor on load."
+)
+
+def Xform "World"
+{
+    # A single cubic NURBS curve, open clamped, drawn as a smooth arc.
+    # 5 CVs, order = 4 (degree 3), knots have 5 + 4 = 9 entries.
+    # End-clamped: first 4 knots = 0, last 4 knots = 1.
+    def NurbsCurves "Cubic"
+    {
+        int[] curveVertexCounts = [5]
+        int[] order = [4]
+        double[] knots = [0, 0, 0, 0, 0.5, 1, 1, 1, 1]
+        double2[] ranges = [(0, 1)]
+        point3f[] points = [
+            (-1.5, 0.0, 0.0),
+            (-0.7, 1.0, 0.0),
+            ( 0.0, 1.5, 0.0),
+            ( 0.7, 1.0, 0.0),
+            ( 1.5, 0.0, 0.0)
+        ]
+        float[] widths = [0.05]
+        color3f[] primvars:displayColor = [(0.85, 0.25, 0.4)]
+        double3 xformOp:translate = (0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # A quadratic NURBS — order = 3, 4 CVs, 7 knots.
+    def NurbsCurves "Quadratic"
+    {
+        int[] curveVertexCounts = [4]
+        int[] order = [3]
+        double[] knots = [0, 0, 0, 0.5, 1, 1, 1]
+        double2[] ranges = [(0, 1)]
+        point3f[] points = [
+            (-1.0, 0.0,  1.0),
+            (-0.4, 0.7,  1.0),
+            ( 0.4, 0.7,  1.0),
+            ( 1.0, 0.0,  1.0)
+        ]
+        float[] widths = [0.04]
+        color3f[] primvars:displayColor = [(0.25, 0.55, 0.85)]
+    }
+}

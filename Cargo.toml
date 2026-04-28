@@ -1,0 +1,152 @@
+[workspace]
+resolver = "2"
+# Only `usd_schemas` lives as a sibling crate — those reader helpers are
+# slated for upstreaming into openusd-rs. Everything else (the plugin lib
+# AND the viewer binary) lives in this root package so the project is one
+# `cargo run` away from end-to-end.
+members = ["crates/usd_schemas"]
+exclude = ["xtra"]
+
+# Use our local openusd-rs checkout while the typed-timeSamples PR
+# (https://github.com/mxpv/openusd/pull/59) is in review. Drop this
+# block once the fix lands upstream and the dep above can pick it
+# up directly.
+[patch."https://github.com/mxpv/openusd"]
+openusd = { path = "xtra/openusd-rs" }
+
+[package]
+name = "bevy_openusd"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+description = "Bevy plugin that loads OpenUSD (.usda / .usdc / .usdz) as native Bevy scenes; ships an interactive viewer binary."
+repository = "https://github.com/bresilla/bevy_openusd"
+keywords = ["bevy", "usd", "openusd", "usdz", "asset"]
+categories = ["game-development", "graphics", "rendering::data-formats"]
+build = "build.rs"
+# Disable cargo's `src/bin/*.rs → one bin each` auto-discovery so the
+# viewer's sibling files (camera.rs, ui.rs, …) read as modules of
+# `main.rs` instead of being treated as their own binaries.
+autobins = false
+
+# Lib under `src/lib/`, viewer binary under `src/bin/`. Both are part of
+# the same root package — the lib is the published plugin, the bin is
+# the dogfood viewer that consumes it.
+[lib]
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "viewer"
+path = "src/bin/main.rs"
+
+[dependencies]
+# Spec-level USD reader (composition, layers, sdf). The plugin keeps a live
+# composed Stage as source of truth and projects into ECS.
+openusd = { git = "https://github.com/mxpv/openusd", branch = "main" }
+
+# Schema layer on top of `openusd`. Lives as a workspace sibling so it can
+# be published / upstreamed independently once the reader helpers stabilise.
+usd_schemas = { path = "crates/usd_schemas" }
+
+# `bevy` features cover both the lib (asset loader, scene projection) and
+# the viewer binary (windowing, gizmos, post-process). Cargo unifies feature
+# sets across the workspace so consumers see the union anyway; keeping it
+# in one place avoids drift.
+bevy = { version = "0.18", default-features = false, features = [
+    "std",
+    "async_executor",
+    "multi_threaded",
+    "bevy_asset",
+    "bevy_state",
+    "bevy_log",
+    "bevy_window",
+    "bevy_winit",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_light",
+    "bevy_mesh",
+    "bevy_camera",
+    "bevy_image",
+    "bevy_scene",
+    "bevy_gizmos",
+    "bevy_gizmos_render",
+    # Registers the `Node3d::PostProcessing` render-graph node. Required
+    # by `bevy::pbr::wireframe::WireframePlugin` (wires its pass as
+    # `EndMainPass → Wireframe → PostProcessing`) and by any post-process
+    # effect stack we add later.
+    "bevy_post_process",
+    # Gates blend-shape / MorphTargetImage rendering. Without it,
+    # `Mesh::set_morph_targets` is a no-op and `MeshMorphWeights` doesn't
+    # drive any vertex displacement. Required for UsdSkel blend-shape
+    # playback.
+    "morph",
+    "default_font",
+    "tonemapping_luts",
+    "smaa_luts",
+    "png",
+    "jpeg",
+    "bmp",
+    "tga",
+    "hdr",
+    "webp",
+    "tiff",
+    "ktx2",
+    "zstd_rust",
+    "x11",
+    "reflect_auto_register",
+    # NOTE: `file_watcher` would wire automatic hot reload on disk
+    # change, but Bevy 0.18.1 pins `notify-debouncer-full ^0.6` which
+    # never shipped to crates.io. Re-enable once upstream upgrades.
+] }
+
+anyhow = "1"
+# Used to composite separately-authored roughness + metallic PNGs into the
+# single packed RGBA texture Bevy's `StandardMaterial` consumes
+# (`metallic_roughness_texture`: G = roughness, B = metallic). USD's
+# `UsdPreviewSurface` lets each channel be an independent texture asset;
+# without composition we can only use one and the other gets silently
+# dropped.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+thiserror = "2"
+zip = { version = "8", default-features = false, features = ["deflate"] }
+# `AssetLoader::Settings` requires Serialize + Deserialize.
+serde = { version = "1", features = ["derive"] }
+
+# Viewer-only deps — kept here because the bin lives in this same package.
+# Native file-picker dialog for the "Browse USD…" button.
+rfd = "0.15"
+# VS-Code-style egui chrome matching `bevy_urdf`'s viewer.
+bevy_egui = { version = "0.39", default-features = false, features = [
+    "default_fonts",
+    "render",
+] }
+# Glass-themed editor UI kit (ribbons, floating panels, widgets, tokens).
+bevy_frost = { git = "https://github.com/bresilla/bevy_frost", package = "bevy_frost" }
+
+# `build.rs` bakes a sample USDZ (USDA + procedural PNG) into
+# `assets/external/` so `cargo run -- usdz_sample.usdz` always has
+# something real to show.
+[build-dependencies]
+zip = { version = "8", default-features = false, features = ["deflate"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+# Tests drive the asset pipeline headless; they need Scene + Transform
+# plumbing to validate projection, but nothing more.
+[dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["png"] }
+bevy = { version = "0.18", default-features = false, features = [
+    "std",
+    "async_executor",
+    "multi_threaded",
+    "bevy_asset",
+    "bevy_log",
+    "bevy_scene",
+    "bevy_render",
+    "bevy_pbr",
+    "bevy_mesh",
+    "bevy_image",
+    "png",
+    "ktx2",
+    "reflect_auto_register",
+] }

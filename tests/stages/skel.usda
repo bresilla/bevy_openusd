@@ -1,0 +1,46 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M16 fixture: a SkelRoot with a 2-joint Skeleton and a bound Mesh."
+)
+
+def Xform "World"
+{
+    def SkelRoot "Rig"
+    {
+        rel skel:skeleton = </World/Rig/Skel>
+        rel skel:animationSource = </World/Rig/Anim>
+
+        def Skeleton "Skel"
+        {
+            uniform token[] joints = ["root", "root/tip"]
+        }
+
+        def SkelAnimation "Anim"
+        {
+            uniform token[] joints = ["root", "root/tip"]
+        }
+
+        def Mesh "Arm" (
+            prepend apiSchemas = ["SkelBindingAPI"]
+        )
+        {
+            rel skel:skeleton = </World/Rig/Skel>
+
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            point3f[] points = [(0, 0, 0), (1, 0, 0), (0, 1, 0)]
+
+            int[] primvars:skel:jointIndices = [0, 1, 0, 1, 0, 1] (
+                interpolation = "vertex"
+                elementSize = 2
+            )
+            float[] primvars:skel:jointWeights = [1.0, 0.0, 0.5, 0.5, 0.0, 1.0] (
+                interpolation = "vertex"
+                elementSize = 2
+            )
+        }
+    }
+}

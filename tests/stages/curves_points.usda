@@ -1,0 +1,58 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "BasisCurves + Points coverage for M11 tests — 3D fixture exercising all three axes."
+)
+
+def Xform "World"
+{
+    # Linear polyline that climbs + turns through 3D.
+    def BasisCurves "Polyline"
+    {
+        uniform token type = "linear"
+        int[] curveVertexCounts = [5]
+        point3f[] points = [
+            (0, 0, 0),
+            (1, 0.3, 0),
+            (1.2, 0.6, 0.8),
+            (0.4, 1.0, 1.4),
+            (-0.6, 1.3, 0.9),
+        ]
+        color3f[] primvars:displayColor = [(1, 0.3, 0.3)]
+    }
+
+    # Cubic Bézier spiralling upward — two spans (7 CVs) with Z varying.
+    def BasisCurves "Curve"
+    {
+        uniform token type = "cubic"
+        uniform token basis = "bezier"
+        int[] curveVertexCounts = [7]
+        point3f[] points = [
+            (2.0, 0.0, 0.0),
+            (2.5, 1.0, 0.5),
+            (3.5, 1.0, 1.5),
+            (4.0, 0.0, 2.0),
+            (4.5, -1.0, 2.5),
+            (3.5, -1.0, 3.5),
+            (2.5, 0.0, 4.0),
+        ]
+        color3f[] primvars:displayColor = [(0.3, 0.7, 1)]
+    }
+
+    # A point cloud arranged in an octahedron around a centre so each
+    # axis direction is covered.
+    def Points "Cloud"
+    {
+        point3f[] points = [
+            (-1, 0, 0), (1, 0, 0),
+            (0, -1, 0), (0, 1, 0),
+            (0, 0, -1), (0, 0, 1),
+        ]
+        float[] widths = [0.12, 0.12, 0.12, 0.12, 0.12, 0.12]
+        color3f[] primvars:displayColor = [(1, 1, 0.3)]
+        double3 xformOp:translate = (-1.5, 0.5, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

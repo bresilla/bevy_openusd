@@ -1,0 +1,67 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M13 fixture: variant set switches the material bound to a Cube."
+)
+
+def Xform "Root" (
+    prepend variantSets = "look"
+    variants = {
+        string look = "red"
+    }
+)
+{
+    def Material "Red"
+    {
+        color3f inputs:diffuseColor = (0.9, 0.1, 0.1)
+        float inputs:roughness = 0.5
+        token outputs:surface.connect = </Root/Red/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Root/Red.inputs:diffuseColor>
+            float inputs:roughness.connect = </Root/Red.inputs:roughness>
+            token outputs:surface
+        }
+    }
+
+    def Material "Blue"
+    {
+        color3f inputs:diffuseColor = (0.1, 0.2, 0.9)
+        float inputs:roughness = 0.5
+        token outputs:surface.connect = </Root/Blue/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Root/Blue.inputs:diffuseColor>
+            float inputs:roughness.connect = </Root/Blue.inputs:roughness>
+            token outputs:surface
+        }
+    }
+
+    def Cube "Box" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+    }
+
+    variantSet "look" = {
+        "red" {
+            over "Box"
+            {
+                rel material:binding = </Root/Red>
+            }
+        }
+        "blue" {
+            over "Box"
+            {
+                rel material:binding = </Root/Blue>
+            }
+        }
+    }
+}

@@ -1,0 +1,32 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1
+    startTimeCode = 0
+    endTimeCode = 60
+    timeCodesPerSecond = 24
+    framesPerSecond = 24
+    doc = "Minimal animated USD test — a single cube that rotates around Y by 360° over 60 frames (2.5s), then loops. If our viewer runs the timeline and applies xformOp animations, the cube spins. Used as a sanity-check for the playback clock and the animated-prim driver, independent of any skel/blendshape work."
+)
+
+def Xform "World"
+{
+    def Cube "Cube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 1.0
+        color3f[] primvars:displayColor = [(0.7, 0.4, 0.9)]
+
+        float xformOp:rotateY.timeSamples = {
+            0: 0,
+            15: 90,
+            30: 180,
+            45: 270,
+            60: 360,
+        }
+        double3 xformOp:translate = (0, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+    }
+}

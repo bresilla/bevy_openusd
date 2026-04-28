@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "Two-Xform sanity stage for examples/view_simple."
+)
+
+def Xform "World"
+{
+    def Xform "ChildA"
+    {
+    }
+
+    def Xform "ChildB"
+    {
+    }
+}

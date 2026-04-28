@@ -1,0 +1,66 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M17 fixture: three Materials authored three different ways — native UsdPreviewSurface, MaterialX-wrapped UsdPreviewSurface, and MaterialX standard_surface."
+)
+
+def Xform "World"
+{
+    def Scope "Materials"
+    {
+        # Native UsdPreviewSurface — baseline sanity check.
+        def Material "Native"
+        {
+            token outputs:surface.connect = </World/Materials/Native/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.9, 0.1, 0.1)
+                float inputs:roughness = 0.4
+                float inputs:metallic = 0.0
+                token outputs:surface
+            }
+        }
+
+        # MaterialX wrapper around UsdPreviewSurface. Same inputs,
+        # different info:id and output wiring through outputs:mtlx:surface.
+        def Material "MtlxWrapped"
+        {
+            token outputs:mtlx:surface.connect = </World/Materials/MtlxWrapped/Surface.outputs:out>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0.1, 0.8, 0.2)
+                float inputs:roughness = 0.25
+                float inputs:metallic = 0.0
+                token outputs:out
+            }
+        }
+
+        # MaterialX standard_surface — different input names.
+        def Material "MtlxStandard"
+        {
+            token outputs:mtlx:surface.connect = </World/Materials/MtlxStandard/Surface.outputs:out>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "ND_standard_surface_surfaceshader"
+                color3f inputs:base_color = (0.1, 0.25, 0.85)
+                float inputs:metalness = 0.9
+                float inputs:specular_roughness = 0.15
+                color3f inputs:emission_color = (0.0, 0.0, 0.5)
+                color3f inputs:opacity = (0.4, 0.4, 0.4)
+                token outputs:out
+            }
+        }
+    }
+
+    def Cube "Anchor"
+    {
+        double size = 0.5
+    }
+}

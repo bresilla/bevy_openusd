@@ -1,0 +1,82 @@
+#usda 1.0
+(
+    defaultPrim = "Showroom"
+    upAxis = "Y"
+    metersPerUnit = 0.01
+    doc = "Multi-asset textured showroom — composes Apple's QuickLook USDZ samples on a 1.5 m grid so we can stress-test reference composition + textured PBR rendering across many distinct materials in a single stage."
+)
+
+def Xform "Showroom"
+{
+    def "Teapot" (
+        prepend references = @./teapot.usdz@
+    )
+    {
+        double3 xformOp:translate = (-300, 0, -150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Glove" (
+        prepend references = @./boxing_glove_realistic.usdz@
+    )
+    {
+        double3 xformOp:translate = (-150, 0, -150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Biplane" (
+        prepend references = @./toy_biplane_realistic.usdz@
+    )
+    {
+        double3 xformOp:translate = (0, 0, -150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Drummer" (
+        prepend references = @./toy_drummer.usdz@
+    )
+    {
+        double3 xformOp:translate = (150, 0, -150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Stratocaster" (
+        prepend references = @./fender_stratocaster.usdz@
+    )
+    {
+        double3 xformOp:translate = (300, 0, -150)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Chameleon" (
+        prepend references = @./chameleon_anim_mtl_variant.usdz@
+    )
+    {
+        double3 xformOp:translate = (-300, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Robot" (
+        prepend references = @./robot.usdz@
+    )
+    {
+        double3 xformOp:translate = (-150, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Car" (
+        prepend references = @./toy_car.usdz@
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Pancakes" (
+        prepend references = @./pancakes_photogrammetry.usdz@
+    )
+    {
+        double3 xformOp:translate = (150, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

@@ -1,0 +1,55 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "M19 fixture: RenderSettings + RenderProduct + RenderVar."
+)
+
+def Xform "World"
+{
+    def Sphere "Anchor"
+    {
+        double radius = 0.5
+    }
+}
+
+def Scope "Render"
+{
+    def RenderSettings "Primary"
+    {
+        uniform int2 resolution = (1920, 1080)
+        uniform float pixelAspectRatio = 1.0
+        uniform token aspectRatioConformPolicy = "expandAperture"
+        rel products = </Render/Products/Beauty>
+        uniform token[] includedPurposes = ["default", "render"]
+        uniform token[] materialBindingPurposes = ["full", "allPurpose"]
+    }
+
+    def Scope "Products"
+    {
+        def RenderProduct "Beauty"
+        {
+            uniform token productType = "raster"
+            string productName = "beauty.0001.exr"
+            rel orderedVars = [</Render/Vars/Color>, </Render/Vars/Depth>]
+        }
+    }
+
+    def Scope "Vars"
+    {
+        def RenderVar "Color"
+        {
+            uniform token dataType = "color3f"
+            string sourceName = "Ci"
+            uniform token sourceType = "raw"
+        }
+
+        def RenderVar "Depth"
+        {
+            uniform token dataType = "float"
+            string sourceName = "a"
+            uniform token sourceType = "raw"
+        }
+    }
+}

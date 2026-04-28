@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "TetMesh: a single tet (4 boundary triangles), and a 5-tet octahedron (8 boundary triangles)."
+)
+
+def Xform "World"
+{
+    # One tetrahedron — all 4 of its faces are boundary.
+    def TetMesh "Single"
+    {
+        point3f[] points = [
+            (-0.5, 0.0,  0.5),
+            ( 0.5, 0.0,  0.5),
+            ( 0.0, 0.0, -0.5),
+            ( 0.0, 1.0,  0.0)
+        ]
+        int[] tetVertexIndices = [0, 1, 2, 3]
+        color3f[] primvars:displayColor = [(0.85, 0.45, 0.25)]
+        double3 xformOp:translate = (-1.5, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # An octahedron split into 4 tets sharing the central vertical
+    # axis. Vertex 0 = bottom, 1..4 = the equator ring (CCW from +X),
+    # 5 = top. Each tet is `(0, ring_a, ring_b, 5)` for adjacent ring
+    # pairs. Total 4 tets, with the 4 inside-the-equator faces shared
+    # (they cancel) and the 8 outside faces forming the boundary.
+    def TetMesh "Octa"
+    {
+        point3f[] points = [
+            ( 0.0, -0.5,  0.0),   # 0 bottom
+            ( 0.5,  0.0,  0.0),   # 1
+            ( 0.0,  0.0,  0.5),   # 2
+            (-0.5,  0.0,  0.0),   # 3
+            ( 0.0,  0.0, -0.5),   # 4
+            ( 0.0,  0.5,  0.0)    # 5 top
+        ]
+        int[] tetVertexIndices = [
+            0, 1, 2, 5,
+            0, 2, 3, 5,
+            0, 3, 4, 5,
+            0, 4, 1, 5
+        ]
+        color3f[] primvars:displayColor = [(0.25, 0.55, 0.85)]
+        double3 xformOp:translate = (1.5, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

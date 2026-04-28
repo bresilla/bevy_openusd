@@ -1,0 +1,32 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    startTimeCode = 0
+    endTimeCode = 48
+    timeCodesPerSecond = 24
+    doc = "M15 fixture: a Cube whose Y rotation is time-sampled."
+)
+
+def Xform "World"
+{
+    def Cube "Spinner"
+    {
+        double size = 0.8
+        float xformOp:rotateY = 0
+        float xformOp:rotateY.timeSamples = {
+            0: 0,
+            24: 180,
+            48: 360,
+        }
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+
+    def Cube "Static"
+    {
+        double size = 0.4
+        float xformOp:rotateY = 0
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+}

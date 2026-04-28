@@ -1,0 +1,104 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "Per-material binding coverage for M3 tests."
+)
+
+def Xform "World"
+{
+    def Scope "Materials"
+    {
+        def Material "Red"
+        {
+            color3f inputs:diffuseColor = (0.8, 0.1, 0.1)
+            float inputs:roughness = 0.6
+            float inputs:metallic = 0.0
+            token outputs:surface.connect = </World/Materials/Red/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </World/Materials/Red.inputs:diffuseColor>
+                float inputs:roughness.connect = </World/Materials/Red.inputs:roughness>
+                float inputs:metallic.connect = </World/Materials/Red.inputs:metallic>
+                token outputs:surface
+            }
+        }
+
+        def Material "GreenMetal"
+        {
+            color3f inputs:diffuseColor = (0.1, 0.7, 0.2)
+            float inputs:roughness = 0.3
+            float inputs:metallic = 0.95
+            token outputs:surface.connect = </World/Materials/GreenMetal/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </World/Materials/GreenMetal.inputs:diffuseColor>
+                float inputs:roughness.connect = </World/Materials/GreenMetal.inputs:roughness>
+                float inputs:metallic.connect = </World/Materials/GreenMetal.inputs:metallic>
+                token outputs:surface
+            }
+        }
+
+        def Material "EmissiveBlue"
+        {
+            color3f inputs:diffuseColor = (0.05, 0.05, 0.2)
+            color3f inputs:emissiveColor = (0.1, 0.4, 1.2)
+            float inputs:roughness = 0.4
+            token outputs:surface.connect = </World/Materials/EmissiveBlue/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </World/Materials/EmissiveBlue.inputs:diffuseColor>
+                color3f inputs:emissiveColor.connect = </World/Materials/EmissiveBlue.inputs:emissiveColor>
+                float inputs:roughness.connect = </World/Materials/EmissiveBlue.inputs:roughness>
+                token outputs:surface
+            }
+        }
+    }
+
+    def Cube "RedBox" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+        rel material:binding = </World/Materials/Red>
+        double3 xformOp:translate = (-1.5, 0.25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "GreenBall" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double radius = 0.3
+        rel material:binding = </World/Materials/GreenMetal>
+        double3 xformOp:translate = (-0.5, 0.3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "GreenBox" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+        rel material:binding = </World/Materials/GreenMetal>
+        double3 xformOp:translate = (0.5, 0.25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "EmissiveBall" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double radius = 0.3
+        rel material:binding = </World/Materials/EmissiveBlue>
+        double3 xformOp:translate = (1.5, 0.3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "Three-prim hierarchy used by M1 scene-projection tests."
+)
+
+def Xform "World"
+{
+    def Xform "ChildA"
+    {
+    }
+
+    def Xform "ChildB"
+    {
+    }
+}

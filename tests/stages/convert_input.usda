@@ -1,0 +1,85 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    doc = "Greenhouse-conversion fixture: mixes an MDL-style Material (no UsdPreviewSurface) with a proper UsdPreviewSurface Material."
+)
+
+def Xform "World"
+{
+    def Scope "Materials"
+    {
+        # MDL-only material — the converter should author a PreviewSurface
+        # override for this one. Name keyword 'Glass' triggers the blue-ish
+        # colour heuristic.
+        def Material "Clear_Glass"
+        {
+            token outputs:mdl:surface.connect = </World/Materials/Clear_Glass/MdlShader.outputs:out>
+
+            def Shader "MdlShader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                token outputs:out
+            }
+        }
+
+        # Plain UsdPreviewSurface — should be left alone.
+        def Material "Already_Preview"
+        {
+            token outputs:surface.connect = </World/Materials/Already_Preview/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.2, 0.7, 0.3)
+                token outputs:surface
+            }
+        }
+
+        # Another MDL-only — should get a 'Metal' fallback.
+        def Material "Shiny_Metal"
+        {
+            token outputs:mdl:surface.connect = </World/Materials/Shiny_Metal/MdlShader.outputs:out>
+
+            def Shader "MdlShader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                token outputs:out
+            }
+        }
+    }
+
+    def Cube "GlassBox" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+        rel material:binding = </World/Materials/Clear_Glass>
+        double3 xformOp:translate = (-1, 0.25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "MetalBox" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+        rel material:binding = </World/Materials/Shiny_Metal>
+        double3 xformOp:translate = (0, 0.25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "GreenBox" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+        rel material:binding = </World/Materials/Already_Preview>
+        double3 xformOp:translate = (1, 0.25, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

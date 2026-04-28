@@ -1,0 +1,89 @@
+#usda 1.0
+(
+    defaultPrim = "Test"
+    upAxis = "Y"
+    metersPerUnit = 1
+    startTimeCode = 0
+    endTimeCode = 60
+    timeCodesPerSecond = 24
+    framesPerSecond = 24
+    doc = "Minimal skinning + blendshape test. Two-joint chain (root + tip), one mesh (a tall box) skinned to the chain, an animation that rotates the tip joint 90 degrees over a second. If our pipeline renders this correctly the cube should bend visibly. Used to bisect issues observed with Pixar's HumanFemale."
+)
+
+def SkelRoot "Test"
+{
+    def Skeleton "Skel"
+    {
+        uniform token[] joints = ["Root", "Root/Tip"]
+        uniform matrix4d[] bindTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1))
+        ]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1))
+        ]
+
+        rel skel:animationSource = </Test/Skel/Anim>
+
+        def SkelAnimation "Anim"
+        {
+            uniform token[] joints = ["Root", "Root/Tip"]
+            float3[] translations = [(0, 0, 0), (0, 1, 0)]
+            quatf[] rotations.timeSamples = {
+                0: [(1, 0, 0, 0), (1, 0, 0, 0)],
+                30: [(1, 0, 0, 0), (0.7071, 0, 0, 0.7071)],
+                60: [(1, 0, 0, 0), (1, 0, 0, 0)]
+            }
+            half3[] scales = [(1, 1, 1), (1, 1, 1)]
+        }
+    }
+
+    def Mesh "Bar" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        rel skel:skeleton = </Test/Skel>
+        int[] primvars:skel:jointIndices = [
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            1, 1, 1, 1,
+            1, 1, 1, 1
+        ] (
+            elementSize = 1
+            interpolation = "vertex"
+        )
+        float[] primvars:skel:jointWeights = [
+            1, 1, 1, 1,
+            1, 1, 1, 1,
+            1, 1, 1, 1,
+            1, 1, 1, 1
+        ] (
+            elementSize = 1
+            interpolation = "vertex"
+        )
+        matrix4d primvars:skel:geomBindTransform = ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
+
+        point3f[] points = [
+            (-0.25, 0, -0.25), (0.25, 0, -0.25), (0.25, 0, 0.25), (-0.25, 0, 0.25),
+            (-0.25, 1, -0.25), (0.25, 1, -0.25), (0.25, 1, 0.25), (-0.25, 1, 0.25),
+            (-0.25, 2, -0.25), (0.25, 2, -0.25), (0.25, 2, 0.25), (-0.25, 2, 0.25),
+            (-0.25, 3, -0.25), (0.25, 3, -0.25), (0.25, 3, 0.25), (-0.25, 3, 0.25)
+        ]
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        int[] faceVertexIndices = [
+            0, 1, 2, 3,
+            4, 5, 6, 7,
+            8, 9, 10, 11,
+            12, 13, 14, 15,
+            0, 1, 5, 4,
+            1, 2, 6, 5,
+            2, 3, 7, 6,
+            3, 0, 4, 7,
+            4, 5, 9, 8,
+            5, 6, 10, 9,
+            8, 9, 13, 12,
+            12, 13, 14, 15
+        ]
+    }
+}
