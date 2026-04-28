@@ -159,11 +159,7 @@ fn open_default_panel(mut ribbon: ResMut<bevy_frost::RibbonOpen>) {
 
 fn resolve_requested_asset() -> (String, PathBuf) {
     let arg = std::env::args().nth(1);
-    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|p| p.parent())
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("."));
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
     match arg {
         None => ("materials.usda".to_string(), workspace_root.join("assets")),

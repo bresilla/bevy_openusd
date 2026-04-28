@@ -60,7 +60,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::Start,
         slot: 0,
-        glyph: "F",
+        glyph: bevy_frost::RibbonGlyph::Text("F"),
         tooltip: "File / selection",
         child_ribbon: None,
     },
@@ -69,7 +69,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::Start,
         slot: 1,
-        glyph: "T",
+        glyph: bevy_frost::RibbonGlyph::Text("T"),
         tooltip: "Prim tree (T)",
         child_ribbon: None,
     },
@@ -78,7 +78,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::Start,
         slot: 2,
-        glyph: "i",
+        glyph: bevy_frost::RibbonGlyph::Text("i"),
         tooltip: "Stage info (I)",
         child_ribbon: None,
     },
@@ -87,7 +87,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::Start,
         slot: 3,
-        glyph: "V",
+        glyph: bevy_frost::RibbonGlyph::Text("V"),
         tooltip: "Variants",
         child_ribbon: None,
     },
@@ -96,7 +96,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::Start,
         slot: 4,
-        glyph: "C",
+        glyph: bevy_frost::RibbonGlyph::Text("C"),
         tooltip: "Cameras",
         child_ribbon: None,
     },
@@ -105,7 +105,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::End,
         slot: 0,
-        glyph: "O",
+        glyph: bevy_frost::RibbonGlyph::Text("O"),
         tooltip: "Overlays (O)",
         child_ribbon: None,
     },
@@ -114,7 +114,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::End,
         slot: 1,
-        glyph: "⏱",
+        glyph: bevy_frost::RibbonGlyph::Text("⏱"),
         tooltip: "Timeline",
         child_ribbon: None,
     },
@@ -123,7 +123,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::End,
         slot: 2,
-        glyph: "?",
+        glyph: bevy_frost::RibbonGlyph::Text("?"),
         tooltip: "Controls (?)",
         child_ribbon: None,
     },
@@ -132,7 +132,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         ribbon: RIBBON_LEFT,
         cluster: RibbonCluster::End,
         slot: 3,
-        glyph: "📜",
+        glyph: bevy_frost::RibbonGlyph::Text("📜"),
         tooltip: "Log",
         child_ribbon: None,
     },
@@ -200,7 +200,6 @@ impl Plugin for ViewerUiPlugin {
                     draw_keys_panel,
                     draw_log_panel,
                     draw_palette_panel,
-                    draw_status_bar,
                 )
                     .chain(),
             );
@@ -1521,55 +1520,6 @@ fn draw_keys_panel(
     let _ = accent_col;
 }
 
-// ─── Status bar (bottom-right, always visible) ──────────────────────
-
-fn draw_status_bar(
-    mut contexts: EguiContexts,
-    info: Res<StageInfo>,
-    accent: Res<AccentColor>,
-    prims: Query<&UsdPrimRef>,
-    meshes_q: Query<&Mesh3d, With<UsdPrimRef>>,
-) {
-    let Ok(ctx) = contexts.ctx_mut() else {
-        return;
-    };
-    let prim_count = prims.iter().count();
-    let mesh_count = meshes_q.iter().count();
-    let accent_col = accent.0;
-    statusbar(
-        ctx,
-        "viewer_status_bar",
-        egui::Align2::RIGHT_BOTTOM,
-        accent_col,
-        |ui| {
-            ui.label(
-                egui::RichText::new(&info.path)
-                    .color(style::TEXT_PRIMARY)
-                    .monospace()
-                    .small(),
-            );
-            status_sep(ui);
-            ui.label(
-                egui::RichText::new(format!("{prim_count} prims"))
-                    .color(style::TEXT_SECONDARY)
-                    .small(),
-            );
-            status_sep(ui);
-            ui.label(
-                egui::RichText::new(format!("{mesh_count} meshes"))
-                    .color(style::TEXT_SECONDARY)
-                    .small(),
-            );
-            status_sep(ui);
-            ui.label(
-                egui::RichText::new(format!("{} layers", info.layer_count))
-                    .color(style::TEXT_SECONDARY)
-                    .small(),
-            );
-        },
-    );
-}
-
 // ─── Log panel ──────────────────────────────────────────────────────
 
 fn draw_log_panel(
@@ -1743,10 +1693,3 @@ fn draw_palette_panel(
     palette.0.open = false;
 }
 
-fn status_sep(ui: &mut egui::Ui) {
-    ui.label(
-        egui::RichText::new("·")
-            .color(style::TEXT_SECONDARY)
-            .small(),
-    );
-}

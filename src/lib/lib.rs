@@ -7,8 +7,6 @@
 //! [`UsdPrimRef`] component. Scene root applies the upAxis / metersPerUnit
 //! basis fix.
 //!
-//! Geometry, materials, purpose filtering, physics — see `docs/PLAN.md`.
-
 mod asset;
 mod build;
 pub mod curves;

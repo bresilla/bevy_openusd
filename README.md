@@ -2,15 +2,24 @@
 
 A [Bevy](https://bevy.org) 0.18 plugin that loads
 [OpenUSD](https://openusd.org) (`.usda` / `.usdc` / `.usdz`) files as native
-Bevy scenes.
+Bevy scenes, plus an interactive viewer/editor binary that ships in the
+same package.
 
-> **Status:** M0 — bootstrap. The asset loader parses a stage through
-> [`mxpv/openusd`](https://github.com/mxpv/openusd) and materializes a
-> `UsdAsset` carrying `defaultPrim` + `layerCount`. Scene graph
-> construction, geometry, materials, and physics land in later
-> milestones — see [`PLAN.md`](./docs/PLAN.md).
+The loader composes a stage through [`mxpv/openusd`](https://github.com/mxpv/openusd)
+and projects it into ECS — one entity per composed prim, geometry +
+materials + skinning + animation attached as Bevy components.
 
-## Usage (M0)
+## Run the viewer
+
+```bash
+cargo run -- path/to/scene.usd[abz]
+```
+
+`cargo run` (no args) opens the bundled `assets/external/usdz_sample.usdz`
+demo. The viewer is the dogfood target during plugin development —
+file-picker, tree panel, gizmos, animation scrub, variant selection.
+
+## Use the plugin
 
 ```rust
 use bevy::prelude::*;
@@ -25,7 +34,7 @@ fn main() {
 }
 
 fn load(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle: Handle<UsdAsset> = asset_server.load("robot.usdz");
+    let handle: Handle<UsdAsset> = asset_server.load("scene.usdz");
     commands.insert_resource(Stage(handle));
 }
 
@@ -33,39 +42,22 @@ fn load(mut commands: Commands, asset_server: Res<AssetServer>) {
 struct Stage(Handle<UsdAsset>);
 ```
 
-Run the smoke example:
-
-```bash
-cargo run --example view_simple
-```
-
-## Roadmap
-
-See [`PLAN.md`](./docs/PLAN.md) for the full implementation plan. Short version:
-
-| Milestone | Contents |
-|-----------|----------|
-| **M0** | Workspace bootstrap; `UsdAsset` / `UsdLoader` skeleton. |
-| **M1** | Live `Stage` projection: one entity per prim, `UsdPrimRef` component, root basis fix. |
-| **M2** | Geometry — `UsdGeom.Mesh` + primitives, xformOp stack, purpose filter. |
-| **M3** | Materials — `UsdPreviewSurface` → `StandardMaterial` with textures. |
-| **M3.5** | USDZ support with embedded textures. |
-| **M4** | Internal references, instancing, Kind-based collapse. |
-| **M5** | UsdPhysics → Rapier bindings (optional feature). |
-| **M6** | Variant selections, payload control, hot reload polish. |
-| **M7+** | UsdSkel / animation. |
-
-## Workspace layout
+## Layout
 
 ```
 bevy_openusd/
-├── src/                 plugin source
-├── examples/            view_simple, view_usdz, view_husky (later)
+├── src/
+│   ├── lib/             plugin: asset loader, scene projection, schema readers
+│   └── bin/             viewer binary (camera, ui, overlays, …)
+├── crates/
+│   └── usd_schemas/     typed schema readers — slated for upstreaming into
+│                        openusd-rs, so kept as a sibling crate
+├── examples/            standalone tools + probe scripts
 ├── tests/
 │   └── stages/          curated .usda fixtures for integration tests
-└── crates/
-    └── usd_schemas/     typed Rust equivalents of Pixar's C++ schemas
-                         (UsdGeom, UsdShade, UsdPhysics — shared with urdf2usd)
+├── assets/              hand-authored .usda demos
+│   └── external/        bundled USDZ archives (Kitchen_set, HumanFemale, …)
+└── xtra/                external checkouts (openusd-rs, etc.)
 ```
 
 ## License

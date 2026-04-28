@@ -7,13 +7,6 @@ resolver = "2"
 members = ["crates/usd_schemas"]
 exclude = ["xtra"]
 
-# Use our local openusd-rs checkout while the typed-timeSamples PR
-# (https://github.com/mxpv/openusd/pull/59) is in review. Drop this
-# block once the fix lands upstream and the dep above can pick it
-# up directly.
-[patch."https://github.com/mxpv/openusd"]
-openusd = { path = "xtra/openusd-rs" }
-
 [package]
 name = "bevy_openusd"
 version = "0.0.1"
