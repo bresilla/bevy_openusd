@@ -356,21 +356,32 @@ impl AssetLoader for UsdLoader {
             search.push(parent);
         }
 
+        // The `settings.variant_selections` list drives composition.
+        // Bevy strips the label from `load_context.path()` before
+        // invoking the loader (the base path is what the loader
+        // sees), so we can't read the label here — but the consumer
+        // is expected to put the same selections into the path label
+        // *and* `settings.variant_selections` (see [`variant_label`]).
+        // The label only matters at the asset-cache layer (so two
+        // variant requests produce two distinct cached handles); the
+        // loader uses settings as the source of truth.
+        let effective_variants = settings.variant_selections.clone();
+
         // Session layer: if the caller authored variant overrides, write
         // them out as a tiny USDA file with `over` specs carrying
         // `variants = { ... }` metadata, then hand the path to the
         // StageBuilder. Composition puts session opinions ahead of
         // everything else, so the override wins over whatever the stage
         // authored itself.
-        let session_layer_path = if !settings.variant_selections.is_empty() {
-            let text = author_variant_session_layer(&settings.variant_selections);
+        let session_layer_path = if !effective_variants.is_empty() {
+            let text = author_variant_session_layer(&effective_variants);
             let session_tmp =
-                tempfile_session(&tmp_dir, fs_path, &settings.variant_selections, &text);
+                tempfile_session(&tmp_dir, fs_path, &effective_variants, &text);
             std::fs::write(&session_tmp, &text)?;
             bevy::log::info!(
                 "usd: wrote {} variant selection(s) to session layer {}",
-                settings.variant_selections.len(),
-                session_tmp.display()
+                effective_variants.len(),
+                session_tmp.display(),
             );
             Some(session_tmp)
         } else {
@@ -560,11 +571,25 @@ impl AssetLoader for UsdLoader {
             light_tally.spot,
             light_tally.dome,
         );
-        let scene_handle = load_context.add_labeled_asset("Scene".into(), scene);
+        // The Scene's labeled-asset key has to be unique per variant
+        // selection or different variant loads will clobber each
+        // other's scenes (Bevy stores labeled sub-assets at the same
+        // `path#label` AssetIndex, so two loads emitting `Scene` for
+        // the same path overwrite — every consumer holding a stale
+        // `Handle<Scene>` then sees the latest variant's content).
+        // Default variant keeps the unsuffixed `"Scene"` for
+        // backwards compatibility with consumers that load
+        // `path.usda#Scene` directly.
+        let scene_label = if effective_variants.is_empty() {
+            "Scene".to_string()
+        } else {
+            format!("Scene:{}", variant_label(&effective_variants))
+        };
+        let scene_handle = load_context.add_labeled_asset(scene_label, scene);
 
         let _ = std::fs::remove_file(&tmp);
 
-        Ok(UsdAsset {
+        let usd_asset = UsdAsset {
             scene: scene_handle,
             default_prim,
             layer_count,
@@ -594,7 +619,25 @@ impl AssetLoader for UsdLoader {
             subdivision_prims,
             light_linking_prims,
             clip_sets,
-        })
+        };
+
+        // If the caller supplied any `variant_selections`, Bevy's
+        // path-only handle cache would otherwise collapse multiple
+        // variant requests onto a single handle (the last load
+        // wins, every consumer flips to the new content). To dodge
+        // that, the consumer should call `load_with_settings` with
+        // an asset path whose *label* equals
+        // [`variant_label`]`(&settings.variant_selections)`. Bevy
+        // will then look up that exact label in our output below;
+        // emitting a labeled sub-asset under the same key gives
+        // each variant request its own cached `Handle<UsdAsset>`
+        // pointing at the right composed content.
+        if !effective_variants.is_empty() {
+            let label = variant_label(&effective_variants);
+            load_context.add_labeled_asset(label, usd_asset.clone());
+        }
+
+        Ok(usd_asset)
     }
 
     fn extensions(&self) -> &[&str] {
@@ -1246,4 +1289,53 @@ fn tempfile_in(dir: &Path, asset_path: &Path, ext: &str) -> PathBuf {
     let mut out = dir.to_path_buf();
     out.push(format!(".bevy_openusd_tmp_{hash:016x}.{ext}"));
     out
+}
+
+/// Build a deterministic asset-path label encoding a list of variant
+/// selections. Combine with a USD path to produce a unique
+/// `Handle<UsdAsset>` per variant set:
+///
+/// ```ignore
+/// let path = format!("{}#{}", "machines/bale.usda", variant_label(&variants));
+/// let handle: Handle<UsdAsset> = asset_server.load_with_settings(path,
+///     move |s: &mut UsdLoaderSettings| { s.variant_selections = variants.clone(); }
+/// );
+/// ```
+///
+/// The label syntax is `variants:prim_path@set_name=option`, joined
+/// with `,` for multiple selections. The loader parses the same
+/// format on the way in (see [`parse_variant_label`]), so passing the
+/// label alone (without `settings.variant_selections`) is enough —
+/// the path-encoded selection survives Bevy's caching.
+pub fn variant_label(variants: &[VariantSelection]) -> String {
+    if variants.is_empty() {
+        return String::new();
+    }
+    let mut parts = Vec::with_capacity(variants.len());
+    for v in variants {
+        parts.push(format!("{}@{}={}", v.prim_path, v.set_name, v.option));
+    }
+    format!("variants:{}", parts.join(","))
+}
+
+/// Inverse of [`variant_label`]. Returns `None` if the label doesn't
+/// have the `variants:` prefix or any individual entry is malformed
+/// (in that case no variants are applied at all — the loader falls
+/// back to whatever's in `settings.variant_selections`).
+pub fn parse_variant_label(label: &str) -> Option<Vec<VariantSelection>> {
+    let body = label.strip_prefix("variants:")?;
+    if body.is_empty() {
+        return Some(Vec::new());
+    }
+    let mut out = Vec::new();
+    for part in body.split(',') {
+        let (prim_path, rest) = part.split_once('@')?;
+        let (set_name, option) = rest.split_once('=')?;
+        out.push(VariantSelection {
+            prim_path: prim_path.to_string(),
+            set_name: set_name.to_string(),
+            option: option.to_string(),
+        });
+    }
+    Some(out)
 }

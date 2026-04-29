@@ -22,7 +22,8 @@ pub use mesh::{mesh_from_usd, mesh_from_usd_subset};
 
 pub use asset::{
     LightTally, StageCamera, UsdAsset, UsdLoader, UsdLoaderError, UsdLoaderSettings,
-    VariantSelection, VariantSet, author_variant_session_layer,
+    VariantSelection, VariantSet, author_variant_session_layer, parse_variant_label,
+    variant_label,
 };
 pub use prim_ref::{
     UsdCustomAttrs, UsdDisplayName, UsdKind, UsdLocalExtent, UsdPrimRef, UsdProcedural,
