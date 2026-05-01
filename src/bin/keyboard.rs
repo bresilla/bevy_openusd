@@ -77,6 +77,9 @@ fn handle_keys(
     if keys.just_pressed(KeyCode::KeyB) {
         toggles.show_skeleton = !toggles.show_skeleton;
     }
+    if keys.just_pressed(KeyCode::KeyY) {
+        toggles.show_physics = !toggles.show_physics;
+    }
     if keys.just_pressed(KeyCode::KeyR) {
         reload.requested = true;
     }

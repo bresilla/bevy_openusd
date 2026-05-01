@@ -15,6 +15,8 @@ pub mod tetmesh;
 mod light;
 mod material;
 pub mod mesh;
+pub mod physics_markers;
+pub(crate) mod physics_attach;
 pub mod prim_ref;
 mod texture;
 
@@ -25,9 +27,14 @@ pub use asset::{
     VariantSelection, VariantSet, author_variant_session_layer, parse_variant_label,
     variant_label,
 };
+pub use physics_markers::{
+    UsdArticulationRoot, UsdCollider, UsdCollisionApprox, UsdCollisionFilter, UsdCollisionGroup,
+    UsdColliderShape, UsdDof, UsdDriveType, UsdJointDrive, UsdJointKind, UsdJointLimit, UsdMass,
+    UsdPhysicsJoint, UsdPhysicsMaterial, UsdPhysicsScene, UsdRigidBody,
+};
 pub use prim_ref::{
     UsdCustomAttrs, UsdDisplayName, UsdKind, UsdLocalExtent, UsdPrimRef, UsdProcedural,
-    UsdSpatialAudio,
+    UsdPurpose, UsdSpatialAudio,
 };
 
 use bevy::app::{App, Plugin};
@@ -52,8 +59,28 @@ impl Plugin for UsdPlugin {
             .register_type::<UsdPrimRef>()
             .register_type::<UsdLocalExtent>()
             .register_type::<UsdKind>()
+            .register_type::<UsdPurpose>()
             .register_type::<prim_ref::UsdSkelAnimDriver>()
-            .register_type::<prim_ref::UsdBlendShapeBinding>();
+            .register_type::<prim_ref::UsdBlendShapeBinding>()
+            // Physics marker components + their inner Reflect types so
+            // scene reload remaps Entity refs and serialization sees
+            // every enum variant.
+            .register_type::<UsdPhysicsScene>()
+            .register_type::<UsdRigidBody>()
+            .register_type::<UsdMass>()
+            .register_type::<UsdCollider>()
+            .register_type::<UsdColliderShape>()
+            .register_type::<UsdCollisionApprox>()
+            .register_type::<UsdPhysicsMaterial>()
+            .register_type::<UsdArticulationRoot>()
+            .register_type::<UsdPhysicsJoint>()
+            .register_type::<UsdJointKind>()
+            .register_type::<UsdJointLimit>()
+            .register_type::<UsdJointDrive>()
+            .register_type::<UsdDof>()
+            .register_type::<UsdDriveType>()
+            .register_type::<UsdCollisionGroup>()
+            .register_type::<UsdCollisionFilter>();
     }
 }
 

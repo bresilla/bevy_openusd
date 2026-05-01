@@ -15,6 +15,7 @@ mod camera;
 mod keyboard;
 mod log_panel;
 mod overlays;
+mod physics_overlay;
 mod state;
 mod ui;
 
@@ -81,6 +82,7 @@ fn main() {
     .add_plugins(ViewerUiPlugin)
     .add_plugins(ViewerKeyboardPlugin)
     .add_plugins(OverlaysPlugin)
+    .add_plugins(crate::physics_overlay::PhysicsOverlayPlugin)
     .init_resource::<Spawned>()
     .init_resource::<ReloadRequest>()
     .init_resource::<LoadRequest>()

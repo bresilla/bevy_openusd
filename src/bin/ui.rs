@@ -1346,6 +1346,12 @@ fn draw_overlays_panel(
                     &mut toggles.show_skeleton,
                     accent_col,
                 );
+                toggle(
+                    ui,
+                    "Physics gizmos (Y)",
+                    &mut toggles.show_physics,
+                    accent_col,
+                );
             });
 
             pane.section("overlay_render", "Render", true, |ui| {

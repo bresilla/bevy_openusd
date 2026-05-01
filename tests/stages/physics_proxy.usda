@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    kilogramsPerUnit = 1.0
+    doc = "Production-pattern fixture: high-poly visual mesh + low-poly proxy collider under one Xform parent. Verifies the proxy prim is NOT dropped by the loader (the previous behaviour) and still receives PhysicsCollisionAPI markers despite purpose=proxy."
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+    }
+
+    def Xform "Robot"
+    {
+        # High-poly visual: rendered, not a collider.
+        def Mesh "RenderMesh"
+        {
+            uniform token purpose = "render"
+            point3f[] points = [
+                (-0.5, 0, -0.5), (0.5, 0, -0.5), (0.5, 0, 0.5), (-0.5, 0, 0.5),
+                (-0.5, 1, -0.5), (0.5, 1, -0.5), (0.5, 1, 0.5), (-0.5, 1, 0.5),
+            ]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [
+                0, 1, 2, 3,
+                4, 7, 6, 5,
+                0, 4, 5, 1,
+                1, 5, 6, 2,
+                2, 6, 7, 3,
+                3, 7, 4, 0,
+            ]
+        }
+
+        # Low-poly proxy: not visually rendered (purpose=proxy), but
+        # carries PhysicsRigidBodyAPI + PhysicsCollisionAPI so this
+        # is the actual physics shape.
+        def Cube "ProxyCollider" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token purpose = "proxy"
+            double size = 1.0
+            double3 xformOp:translate = (0, 0.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        # Authoring helper — should also survive the load (no longer dropped).
+        def Sphere "DebugMarker"
+        {
+            uniform token purpose = "guide"
+            double radius = 0.05
+        }
+    }
+}

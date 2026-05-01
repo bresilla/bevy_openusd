@@ -1,0 +1,60 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Z"
+    metersPerUnit = 0.01
+    kilogramsPerUnit = 0.001
+    doc = "Phase 4 fixture: non-unit metersPerUnit (cm) + kilogramsPerUnit (g) + Z-up. Verifies conversions land SI in markers."
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+        # Z-up gravity (down in USD's scene frame). After projection's
+        # basis fix this should land as (0, -1, 0) in Bevy world space.
+        vector3f physics:gravityDirection = (0, 0, -1)
+        # 981 cm/s² × metersPerUnit(0.01) = 9.81 m/s²
+        float physics:gravityMagnitude = 981
+    }
+
+    def Cube "Body" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsCollisionAPI"]
+    )
+    {
+        double size = 50
+        # 2500 grams × kilogramsPerUnit(0.001) = 2.5 kg
+        float physics:mass = 2500
+        # 100 cm/s × metersPerUnit(0.01) = 1.0 m/s
+        vector3f physics:velocity = (100, 0, 0)
+        # 180 degrees/s → π rad/s
+        vector3f physics:angularVelocity = (180, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "Anchor" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI"]
+    )
+    {
+        double size = 30
+        bool physics:kinematicEnabled = 1
+        double3 xformOp:translate = (200, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def PhysicsPrismaticJoint "Slider"
+    {
+        rel physics:body0 = </World/Anchor>
+        rel physics:body1 = </World/Body>
+        # localPos in cm; should land as (0.5, 0.5, 0) m after conversion.
+        point3f physics:localPos0 = (50, 50, 0)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "X"
+        # Prismatic limits in scene units; -50/50 cm → -0.5/0.5 m
+        float physics:lowerLimit = -50
+        float physics:upperLimit = 50
+    }
+}

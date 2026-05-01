@@ -1,0 +1,48 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    kilogramsPerUnit = 1.0
+    doc = "M_LAST fixture: a PhysicsScene, a rigid body with mass, and a revolute joint."
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+    }
+
+    def Cube "Base" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsCollisionAPI"]
+    )
+    {
+        double size = 1.0
+        float physics:mass = 2.5
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (0.1, 0.1, 0.1)
+        quatf physics:principalAxes = (1, 0, 0, 0)
+    }
+
+    def Cube "Arm" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI"]
+    )
+    {
+        double size = 0.5
+        double3 xformOp:translate = (1, 0.5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def PhysicsRevoluteJoint "Hinge"
+    {
+        rel physics:body0 = </World/Base>
+        rel physics:body1 = </World/Arm>
+        point3f physics:localPos0 = (0.5, 0.5, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        point3f physics:localPos1 = (-0.25, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "Z"
+        float physics:lowerLimit = -45
+        float physics:upperLimit = 45
+    }
+}

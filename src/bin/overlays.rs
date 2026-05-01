@@ -123,6 +123,11 @@ pub struct DisplayToggles {
     /// joint and its parent. Useful for verifying the rig is animating
     /// even when the skinned mesh hides what's happening.
     pub show_skeleton: bool,
+    /// Physics overlay — joint anchors / axes / connections, articulation
+    /// chain highlights, gravity vector at scene origin. Visualises the
+    /// projection's `UsdPhysicsJoint` / `UsdArticulationRoot` /
+    /// `UsdPhysicsScene` markers without needing an engine attached.
+    pub show_physics: bool,
     /// Global wireframe mode — drives `WireframeConfig.global`.
     pub wireframe: bool,
     /// Multiplier applied to every authored light's intensity. Captured
@@ -143,6 +148,7 @@ impl Default for DisplayToggles {
             show_prim_markers: false,
             prim_marker_bias: 1.0,
             show_skeleton: false,
+            show_physics: false,
             wireframe: false,
             light_intensity_scale: 1.0,
         }

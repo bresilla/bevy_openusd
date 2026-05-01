@@ -116,6 +116,9 @@ bevy_egui = { version = "0.39", default-features = false, features = [
 ] }
 # Glass-themed editor UI kit (ribbons, floating panels, widgets, tokens).
 bevy_frost = { git = "https://github.com/bresilla/bevy_frost", package = "bevy_frost" }
+# Reusable 3D-scene gizmos: axis triads + joint-shaped primitives
+# (revolute arc, prismatic segment, spherical cone, distance envelope).
+bevy_glacial = { path = "../../../robolibs/bevy_glacial" }
 
 # `build.rs` bakes a sample USDZ (USDA + procedural PNG) into
 # `assets/external/` so `cargo run -- usdz_sample.usdz` always has

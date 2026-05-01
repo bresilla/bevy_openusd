@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1.0
+    kilogramsPerUnit = 1.0
+    doc = "Phase 4 fixture: PhysicsMaterialAPI on a Material prim, bound to a collider via material:binding:physics."
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+    }
+
+    def Material "Rubber" (
+        prepend apiSchemas = ["PhysicsMaterialAPI"]
+    )
+    {
+        float physics:dynamicFriction = 0.8
+        float physics:staticFriction = 0.9
+        float physics:restitution = 0.6
+        float physics:density = 1100
+    }
+
+    def Material "Ice" (
+        prepend apiSchemas = ["PhysicsMaterialAPI"]
+    )
+    {
+        float physics:dynamicFriction = 0.05
+        float physics:staticFriction = 0.1
+        float physics:restitution = 0.0
+    }
+
+    def Cube "Ball" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+        rel material:binding:physics =</World/Rubber>
+    }
+
+    def Cube "Slider" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "MaterialBindingAPI"]
+    )
+    {
+        double size = 0.5
+        rel material:binding:physics =</World/Ice>
+        double3 xformOp:translate = (1, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

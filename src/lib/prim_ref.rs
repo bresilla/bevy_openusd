@@ -152,6 +152,42 @@ pub struct UsdKind {
 #[reflect(Component, Default)]
 pub struct UsdDisplayName(pub String);
 
+/// Authored `UsdGeomImageable.purpose`. Distinguishes always-rendered
+/// geometry (`Default`), final-pass geometry (`Render`), low-detail
+/// substitutes (`Proxy` — Pixar convention also uses these as
+/// physics colliders), and authoring-only helpers (`Guide`).
+///
+/// Only attached when the prim authored a non-default purpose. The
+/// projection sets `Visibility::Hidden` for `Proxy` / `Guide` by
+/// default; downstream code (or a viewer toggle) can flip them back
+/// on.
+#[derive(Component, Reflect, Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[reflect(Component, Default)]
+pub enum UsdPurpose {
+    #[default]
+    Default,
+    Render,
+    Proxy,
+    Guide,
+}
+
+impl UsdPurpose {
+    pub fn from_token(s: &str) -> Self {
+        match s {
+            "render" => UsdPurpose::Render,
+            "proxy" => UsdPurpose::Proxy,
+            "guide" => UsdPurpose::Guide,
+            _ => UsdPurpose::Default,
+        }
+    }
+
+    /// `true` when this purpose suppresses default visual rendering
+    /// — the projection uses this to set initial `Visibility::Hidden`.
+    pub fn hidden_by_default(self) -> bool {
+        matches!(self, UsdPurpose::Proxy | UsdPurpose::Guide)
+    }
+}
+
 /// Tag on `UsdMediaSpatialAudio` prims. Carries the authored
 /// `filePath` + playback / aural-mode tokens; downstream consumers
 /// either ignore it (read-side only, like the viewer today) or wire

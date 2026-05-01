@@ -103,6 +103,16 @@ pub struct UsdAsset {
     /// Decoded `Physics*Joint` prims. Authored frames + limits already
     /// resolved — downstream physics backends can consume directly.
     pub joints: Vec<usd_schemas::physics::ReadJoint>,
+    /// `PhysicsArticulationRootAPI` prim paths (Phase 3).
+    pub articulation_root_prims: Vec<String>,
+    /// Prim paths bearing `PhysicsMaterialAPI` (typically `Material` prims).
+    pub physics_material_prims: Vec<String>,
+    /// `PhysicsCollisionGroup` prim paths.
+    pub collision_group_prims: Vec<String>,
+    /// Prim paths bearing `PhysicsFilteredPairsAPI`.
+    pub filtered_pairs_prims: Vec<String>,
+    /// Prim paths bearing `PhysicsCollisionAPI`.
+    pub collider_prims: Vec<String>,
     /// Authored `custom` attributes + `customData` + `assetInfo` per
     /// prim (M24). Keyed by prim path; prims with NO user-authored
     /// metadata stay out of the map entirely.
@@ -441,7 +451,7 @@ impl AssetLoader for UsdLoader {
             read_stage_timeline(&stage);
         let (skeletons, skel_roots, skel_bindings) = collect_skel(&stage);
         let (render_settings, render_products, render_vars) = collect_render(&stage);
-        let (rigid_body_prims, physics_scene_prims, joints) = collect_physics(&stage);
+        let physics_summary = collect_physics(&stage);
         let custom_attrs = collect_custom_attrs(&stage);
         let custom_layer_data = usd_schemas::geom::read_custom_layer_data(&stage)
             .ok()
@@ -611,9 +621,14 @@ impl AssetLoader for UsdLoader {
             render_settings,
             render_products,
             render_vars,
-            rigid_body_prims,
-            physics_scene_prims,
-            joints,
+            rigid_body_prims: physics_summary.rigid_body_prims,
+            physics_scene_prims: physics_summary.physics_scene_prims,
+            joints: physics_summary.joints,
+            articulation_root_prims: physics_summary.articulation_root_prims,
+            physics_material_prims: physics_summary.physics_material_prims,
+            collision_group_prims: physics_summary.collision_group_prims,
+            filtered_pairs_prims: physics_summary.filtered_pairs_prims,
+            collider_prims: physics_summary.collider_prims,
             custom_attrs,
             custom_layer_data,
             subdivision_prims,
@@ -1007,37 +1022,45 @@ fn collect_custom_attrs(
 /// recognised `Physics*Joint`. The plugin doesn't simulate — these
 /// surfaces let downstream physics backends consume authored data
 /// without rewalking the stage themselves.
-fn collect_physics(
-    stage: &openusd::Stage,
-) -> (
-    Vec<String>,
-    Vec<String>,
-    Vec<usd_schemas::physics::ReadJoint>,
-) {
-    use openusd::sdf::Path;
-    let mut rigid = Vec::new();
-    let mut scenes = Vec::new();
-    let mut joints = Vec::new();
-    let _ = stage.traverse(|path: &Path| {
-        if matches!(
-            usd_schemas::physics::read_is_physics_scene(stage, path),
-            Ok(true)
-        ) {
-            scenes.push(path.as_str().to_string());
-            return;
-        }
-        if let Ok(Some(j)) = usd_schemas::physics::read_joint(stage, path) {
+struct PhysicsSummary {
+    rigid_body_prims: Vec<String>,
+    physics_scene_prims: Vec<String>,
+    joints: Vec<usd_schemas::physics::ReadJoint>,
+    articulation_root_prims: Vec<String>,
+    physics_material_prims: Vec<String>,
+    collision_group_prims: Vec<String>,
+    filtered_pairs_prims: Vec<String>,
+    collider_prims: Vec<String>,
+}
+
+/// Single top-of-stage sweep that classifies every physics-bearing
+/// prim and decodes joint specs. Used by the loader to populate
+/// `UsdAsset` summary lists for the viewer info panel; the actual ECS
+/// projection happens in `physics_attach::attach_physics_to_prim`.
+fn collect_physics(stage: &openusd::Stage) -> PhysicsSummary {
+    use usd_schemas::physics as ph;
+    let prims = ph::find_physics_prims(stage).unwrap_or_default();
+
+    let mut joints = Vec::with_capacity(prims.joints.len());
+    for path_str in &prims.joints {
+        let Ok(p) = openusd::sdf::path(path_str) else {
+            continue;
+        };
+        if let Ok(Some(j)) = ph::read_joint(stage, &p) {
             joints.push(j);
-            return;
         }
-        if matches!(
-            usd_schemas::physics::read_has_rigid_body(stage, path),
-            Ok(true)
-        ) {
-            rigid.push(path.as_str().to_string());
-        }
-    });
-    (rigid, scenes, joints)
+    }
+
+    PhysicsSummary {
+        rigid_body_prims: prims.rigid_bodies,
+        physics_scene_prims: prims.scenes,
+        joints,
+        articulation_root_prims: prims.articulation_roots,
+        physics_material_prims: prims.materials,
+        collision_group_prims: prims.collision_groups,
+        filtered_pairs_prims: prims.filtered_pairs,
+        collider_prims: prims.colliders,
+    }
 }
 
 /// Walk the stage and collect every `UsdRender.*` prim into three
