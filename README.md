@@ -9,6 +9,17 @@ The loader composes a stage through [`mxpv/openusd`](https://github.com/mxpv/ope
 and projects it into ECS — one entity per composed prim, geometry +
 materials + skinning + animation attached as Bevy components.
 
+![Agilebot GBT-C5A 6-DOF cobot loaded from an Isaac Sim USDC asset, with the physics overlay (Y) showing per-joint frame triads, axis arrows, and revolute limit arcs](docs/agilebot.jpeg)
+
+The screenshot above is the [Agilebot GBT-C5A](https://github.com/sh-agilebot/agilebot_isaac_usd_assets)
+6-DOF collaborative arm — a real Isaac Sim production asset (binary
+USDC, 5 layers composed, 165 prims, 7 rigid bodies, 7 joints, 1
+articulation root) loaded with `make run ARGS="path/to/gbt-c5a.usd"`.
+The physics overlay (toggle with `Y`) draws per-joint body frame triads,
+fuchsia axis arrows, kind-coloured connection lines, and the revolute
+limit arcs (orange ellipses). Backend-neutral: any downstream Bevy
+physics engine (Rapier, Avian, …) can consume the marker components
+without `bevy_openusd` taking a dep on a specific solver.
 
 THIS WAS A PROJECT SUPORTED BY WUR (WAGENINGEN UNIVERSITY AND RESEARCH). A LOT OF CODE WAS COPIED FROM THE ORIGINAL REPO TO BE OPEND SOURCED.
 
