@@ -9,6 +9,9 @@ The loader composes a stage through [`mxpv/openusd`](https://github.com/mxpv/ope
 and projects it into ECS — one entity per composed prim, geometry +
 materials + skinning + animation attached as Bevy components.
 
+
+THIS WAS A PROJECT SUPORTED BY WUR (WAGENINGEN UNIVERSITY AND RESEARCH). A LOT OF CODE WAS COPIED FROM THE ORIGINAL REPO TO BE OPEND SOURCED.
+
 ## Run the viewer
 
 ```bash

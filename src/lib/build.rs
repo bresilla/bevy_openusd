@@ -120,7 +120,7 @@ pub fn stage_to_scene(
     // `/Scene/Foo` still surfaces `/root` at the top level of the composed
     // stage) from being re-spawned alongside the main tree. Greenhouse
     // loses ~17 ghost subtrees at origin this way.
-    let roots_to_walk: Vec<Path> = if let Some(default) = stage.default_prim() {
+    let mut roots_to_walk: Vec<Path> = if let Some(default) = stage.default_prim() {
         match Path::abs_root().append_path(default.as_str()) {
             Ok(p) if matches!(stage.spec_type(p.clone()), Ok(Some(SpecType::Prim))) => vec![p],
             _ => stage
@@ -138,6 +138,30 @@ pub fn stage_to_scene(
             .filter_map(|n| Path::abs_root().append_path(n.as_str()).ok())
             .collect()
     };
+
+    // Isaac Sim convention: PhysicsScene + PhysicsCollisionGroup live as
+    // root-level peers of the defaultPrim (e.g. Agilebot puts
+    // `/physicsScene` next to `/GBT_C5A`). The defaultPrim-only walk
+    // would silently drop them — losing gravity and collision
+    // grouping. Append any root prim that authors physics opinions and
+    // isn't already in the walk list.
+    if stage.default_prim().is_some() {
+        let already: std::collections::HashSet<String> = roots_to_walk
+            .iter()
+            .map(|p| p.as_str().to_string())
+            .collect();
+        for name in stage.root_prims().unwrap_or_default() {
+            let Ok(p) = Path::abs_root().append_path(name.as_str()) else {
+                continue;
+            };
+            if already.contains(p.as_str()) {
+                continue;
+            }
+            if is_root_physics_prim(stage, &p) {
+                roots_to_walk.push(p);
+            }
+        }
+    }
 
     for path in roots_to_walk {
         spawn_prim_subtree(stage, &path, scene_root, &mut world, &mut ctx);
@@ -1852,6 +1876,32 @@ fn find_first_typed_descendant(stage: &Stage, root: &Path, target_type: &str) ->
         }
     }
     None
+}
+
+/// `true` when `prim` is the kind of root-level prim that authors
+/// physics opinions and should be walked even when the loader is
+/// rooted at `defaultPrim` (Isaac Sim assets put `PhysicsScene` /
+/// `PhysicsCollisionGroup` here as peers of the robot subtree).
+///
+/// Recognises:
+/// - `typeName == PhysicsScene` / `PhysicsCollisionGroup` /
+///   `PhysicsRigidBody*Joint` and friends
+/// - `apiSchemas` containing any `Physics*API` (RigidBody, Mass,
+///   Collision, ArticulationRoot, FilteredPairs, Material)
+///
+/// Plain definition-library Scopes (`/visuals`, `/meshes`, `/Render`)
+/// fall through and aren't double-walked.
+fn is_root_physics_prim(stage: &Stage, prim: &Path) -> bool {
+    let type_name: String = stage
+        .field::<String>(prim.clone(), "typeName")
+        .ok()
+        .flatten()
+        .unwrap_or_default();
+    if type_name.starts_with("Physics") {
+        return true;
+    }
+    let api = usd_schemas::physics::read_api_schemas(stage, prim).unwrap_or_default();
+    api.iter().any(|s| s.starts_with("Physics"))
 }
 
 /// Check `purpose` on `prim`; skip `"proxy"` / `"guide"` for M2. M6 lifts

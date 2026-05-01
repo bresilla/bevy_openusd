@@ -7,6 +7,13 @@ resolver = "2"
 members = ["crates/usd_schemas"]
 exclude = ["xtra"]
 
+# Override the git-pulled `openusd` with a locally-patched clone of the
+# same revision. The patch is one fix to the USDC quaternion reader to
+# match Pixar's `GfQuat` memory layout (see `xtra/openusd-rs-patched`).
+# Slated to be upstreamed.
+[patch."https://github.com/mxpv/openusd"]
+openusd = { path = "xtra/openusd-rs-patched" }
+
 [package]
 name = "bevy_openusd"
 version = "0.0.1"
