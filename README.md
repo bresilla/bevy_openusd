@@ -21,6 +21,20 @@ limit arcs (orange ellipses). Backend-neutral: any downstream Bevy
 physics engine (Rapier, Avian, …) can consume the marker components
 without `bevy_openusd` taking a dep on a specific solver.
 
+![Pixar's reference Kitchen_set scene loaded into bevy_openusd, with the Stage Info panel showing 229 composed layers, 2745 prims, 1788 meshes, and 418 variants](docs/kitchen_set.png)
+
+The kitchen scene is Pixar's reference [Kitchen_set](https://openusd.org/release/dl_kitchen_set.html)
+asset — the canonical USD test set used across the industry for loader
+correctness. Bundled USDZ archive composing **229 sublayers /
+references**, **418 variants**, **1,788 meshes**, **2,745 ECS entities**
+after projection, and an **11.91 m scene diagonal** at the spec-default
+0.01 metersPerUnit. Loaded with `make run ARGS="assets/external/Kitchen_set.usdz"`.
+The Stage Info panel (`I`) shows the composition tally + per-domain
+counters (lights, instances, skel, render settings, physics, custom
+attrs, subdivisions, light linking, clips, spatial audio, procedurals)
+so you can sanity-check what the loader actually decoded. The
+auto-framed bounding box in the screenshot is the white wireframe.
+
 THIS WAS A PROJECT SUPORTED BY WUR (WAGENINGEN UNIVERSITY AND RESEARCH). A LOT OF CODE WAS COPIED FROM THE ORIGINAL REPO TO BE OPEND SOURCED.
 
 ## Run the viewer

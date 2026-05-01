@@ -627,72 +627,45 @@ fn spawn_when_ready(
     }
 }
 
-/// Handle the Browse-USD file picker result. Reconfigures the running
-/// AssetServer to the new root directory + requests a reload against
-/// the new filename. Full AssetPlugin reconfiguration isn't supported
-/// at runtime, so we instead swap the asset name + search paths
-/// passed into `load_with_settings` — effective as long as the new
-/// file's parent happens to fall under the existing default source.
-/// For arbitrary paths, window title + behaviour update but the
-/// AssetServer may resolve against the original root; cleanest
-/// workaround is documenting that Browse-USD works best on files
-/// under the initial root dir. Full dynamic-source swap lands with
-/// the main-loop restart approach when needed.
-fn apply_load_request(
-    mut commands: Commands,
-    mut req: ResMut<LoadRequest>,
-    asset_server: Res<AssetServer>,
-    scene_roots: Query<Entity, With<SceneRoot>>,
-    mut stage: ResMut<StageHandle>,
-    mut spawned: ResMut<Spawned>,
-    mut info: ResMut<StageInfo>,
-    mut requested: ResMut<RequestedAsset>,
-    mut window: Query<&mut Window, With<bevy::window::PrimaryWindow>>,
-) {
+/// Handle the Browse-USD file picker result by re-exec'ing the viewer
+/// binary with the picked path as `argv[1]`.
+///
+/// Bevy's `AssetServer` is configured at startup with one root directory
+/// (`AssetPlugin.file_path`) and doesn't support changing that root
+/// after the App is running — any subsequent `asset_server.load(abs_path)`
+/// call resolves against the original root, silently mis-loading or
+/// failing when the picked file lives elsewhere. Spawning a fresh
+/// process bypasses that lock entirely: the new instance reads
+/// `argv[1]` in `resolve_requested_asset`, sets the AssetPlugin's
+/// `file_path` to the picked file's parent before the App is built,
+/// and loads cleanly.
+fn apply_load_request(mut req: ResMut<LoadRequest>) {
     let Some(new_path) = req.path.take() else {
         return;
     };
 
-    let file = new_path
-        .file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| new_path.display().to_string());
-    let root = new_path
-        .parent()
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("."));
+    let exe = match std::env::current_exe() {
+        Ok(p) => p,
+        Err(e) => {
+            error!("Browse: cannot resolve current_exe to re-launch: {e}");
+            return;
+        }
+    };
 
-    info!("Browse: switching to {file} under {}", root.display());
-
-    // Tear down current scene + reset load bookkeeping.
-    for e in &scene_roots {
-        commands.entity(e).despawn();
-    }
-    spawned.0 = false;
-    info.path = file.clone();
-    info.default_prim = None;
-    info.layer_count = 0;
-    info.variant_count = 0;
-
-    // Update requested resource + re-issue load. Search paths include
-    // the new root so sibling references work.
-    requested.name = file.clone();
-    requested.root = root.clone();
-    let search = vec![root];
-
-    let handle: Handle<UsdAsset> = asset_server.load_with_settings::<UsdAsset, _>(
-        // Absolute path works here because Bevy's default AssetReader
-        // falls back to an absolute-path source when the name
-        // resolves to an existing file.
-        new_path.to_string_lossy().into_owned(),
-        move |s: &mut UsdLoaderSettings| {
-            s.search_paths = search.clone();
-        },
+    info!(
+        "Browse: re-launching {} with {}",
+        exe.display(),
+        new_path.display()
     );
-    stage.0 = handle;
 
-    if let Ok(mut w) = window.single_mut() {
-        w.title = format!("bevy_openusd — {file}");
+    match std::process::Command::new(&exe).arg(&new_path).spawn() {
+        Ok(_) => {
+            // New viewer is up; exit cleanly so we don't sit alongside it.
+            std::process::exit(0);
+        }
+        Err(e) => {
+            error!("Browse: failed to spawn new viewer process: {e}");
+        }
     }
 }
 
