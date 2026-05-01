@@ -45,6 +45,17 @@ linking, clips, spatial audio, procedurals) so you can sanity-check what the
 loader actually decoded. The auto-framed bounding box in the screenshot is the
 white wireframe.
 
+![Animated hummingbird from Apple's AR Quick Look gallery — UsdSkel skeleton + skinned mesh + bone animation playing back in the bevy_openusd viewer](docs/hummingbird.gif)
+
+The hummingbird is one of the [AR Quick Look sample assets](https://developer.apple.com/augmented-reality/quick-look/)
+Apple ships for testing — a small USDZ with a UsdSkel skeleton, a skinned
+mesh bound to that skeleton, and a baked bone animation. The viewer's
+animation clock auto-starts when the loaded asset has any animated content,
+plays back through the bone hierarchy each frame (`drive_skel_animations`
+system), and the result is the wing flap + body bob you see above. Toggle
+the bone overlay with `B` to see the skeleton's joint chain rendered as
+gizmo lines while the skin animates around it.
+
 ## Run the viewer
 
 ```bash
