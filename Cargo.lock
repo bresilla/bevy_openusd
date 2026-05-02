@@ -775,12 +775,16 @@ dependencies = [
 [[package]]
 name = "bevy_frost"
 version = "0.0.1"
-source = "git+https://github.com/bresilla/bevy_frost#833e4d866ca83286bef8beeb921af607ec3e8c44"
+source = "git+https://github.com/bresilla/bevy_frost?branch=develop#65787bdfbefa994f375cd6ddca926f09b9a8d25b"
 dependencies = [
  "bevy",
  "bevy_egui",
- "frostcore",
+ "corekit",
+ "egui",
+ "egui-scale",
  "mimalloc",
+ "slab",
+ "smallvec",
 ]
 
 [[package]]
@@ -1889,6 +1893,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "corekit"
+version = "0.0.1"
+source = "git+https://github.com/bresilla/bevy_frost?branch=develop#65787bdfbefa994f375cd6ddca926f09b9a8d25b"
+dependencies = [
+ "bevy",
+ "egui",
+ "iconflow",
+ "pastel",
+]
+
+[[package]]
 name = "cosmic-text"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2542,20 +2557,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf"
 dependencies = [
  "percent-encoding",
-]
-
-[[package]]
-name = "frostcore"
-version = "0.0.1"
-source = "git+https://github.com/bresilla/bevy_frost#833e4d866ca83286bef8beeb921af607ec3e8c44"
-dependencies = [
- "bevy",
- "egui",
- "egui-scale",
- "iconflow",
- "pastel",
- "slab",
- "smallvec",
 ]
 
 [[package]]

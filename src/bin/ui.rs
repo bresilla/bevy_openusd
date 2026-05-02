@@ -63,6 +63,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("F"),
         tooltip: "File / selection",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_TREE,
@@ -72,6 +73,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("T"),
         tooltip: "Prim tree (T)",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_INFO,
@@ -81,6 +83,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("i"),
         tooltip: "Stage info (I)",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_VARIANTS,
@@ -90,6 +93,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("V"),
         tooltip: "Variants",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_CAMERAS,
@@ -99,6 +103,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("C"),
         tooltip: "Cameras",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_OVERLAYS,
@@ -108,6 +113,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("O"),
         tooltip: "Overlays (O)",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_TIMELINE,
@@ -117,6 +123,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("⏱"),
         tooltip: "Timeline",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_KEYS,
@@ -126,6 +133,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("?"),
         tooltip: "Controls (?)",
         child_ribbon: None,
+        role: None,
     },
     RibbonItem {
         id: RIB_LOG,
@@ -135,6 +143,7 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         glyph: bevy_frost::RibbonGlyph::Text("📜"),
         tooltip: "Log",
         child_ribbon: None,
+        role: None,
     },
 ];
 
