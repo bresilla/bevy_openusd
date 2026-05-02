@@ -1,0 +1,15 @@
+[package]
+name = "usd_physics_markers"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+description = "Backend-neutral marker components for UsdPhysics — the shared contract between bevy_openusd (loader) and engine adapters (bevy_openusd_rapier, future bevy_openusd_avian, etc.)."
+repository = "https://github.com/bresilla/bevy_openusd"
+
+[dependencies]
+bevy = { version = "0.18", default-features = false, features = [
+    "std",
+    "bevy_asset",
+    "bevy_log",
+    "reflect_auto_register",
+] }

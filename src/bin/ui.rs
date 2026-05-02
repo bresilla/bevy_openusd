@@ -40,16 +40,18 @@ pub const RIB_TREE: &str = "viewer_tree";
 pub const RIB_INFO: &str = "viewer_info";
 pub const RIB_VARIANTS: &str = "viewer_variants";
 pub const RIB_CAMERAS: &str = "viewer_cameras";
+pub const RIB_MATERIALS: &str = "viewer_materials";
 pub const RIB_OVERLAYS: &str = "viewer_overlays";
 pub const RIB_TIMELINE: &str = "viewer_timeline";
 pub const RIB_KEYS: &str = "viewer_keys";
 pub const RIB_LOG: &str = "viewer_log";
+pub const RIB_PLAY: &str = "viewer_play";
 
 const RIBBONS: &[RibbonDef] = &[RibbonDef {
     id: RIBBON_LEFT,
     edge: RibbonEdge::Left,
     role: RibbonRole::Panel,
-    mode: RibbonMode::TwoSided,
+    mode: RibbonMode::ThreeSided,
     draggable: false,
     accepts: &[],
 }];
@@ -104,6 +106,26 @@ const RIBBON_ITEMS: &[RibbonItem] = &[
         tooltip: "Cameras",
         child_ribbon: None,
         role: None,
+    },
+    RibbonItem {
+        id: RIB_MATERIALS,
+        ribbon: RIBBON_LEFT,
+        cluster: RibbonCluster::Start,
+        slot: 5,
+        glyph: bevy_frost::RibbonGlyph::Text("M"),
+        tooltip: "Materials",
+        child_ribbon: None,
+        role: None,
+    },
+    RibbonItem {
+        id: RIB_PLAY,
+        ribbon: RIBBON_LEFT,
+        cluster: RibbonCluster::Middle,
+        slot: 0,
+        glyph: bevy_frost::RibbonGlyph::Text("▶"),
+        tooltip: "Play / pause physics",
+        child_ribbon: None,
+        role: Some(bevy_frost::RibbonRole::Icon),
     },
     RibbonItem {
         id: RIB_OVERLAYS,
@@ -204,6 +226,7 @@ impl Plugin for ViewerUiPlugin {
                     draw_info_panel,
                     draw_variants_panel,
                     draw_cameras_panel,
+                    draw_materials_panel,
                     draw_overlays_panel,
                     draw_timeline_panel,
                     draw_keys_panel,
@@ -226,11 +249,13 @@ fn draw_ribbons(
     mut open: ResMut<RibbonOpen>,
     mut placement: ResMut<RibbonPlacement>,
     mut drag: ResMut<RibbonDrag>,
+    mut physics: ResMut<crate::PhysicsActive>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else {
         return;
     };
-    let _clicks = draw_assembly(
+    let physics_on = physics.0;
+    let clicks = draw_assembly(
         ctx,
         accent.0,
         RIBBONS,
@@ -238,8 +263,13 @@ fn draw_ribbons(
         &mut open,
         &mut placement,
         &mut drag,
-        |_| false,
+        |id| id == RIB_PLAY && physics_on,
     );
+    for click in clicks {
+        if click.item == RIB_PLAY {
+            physics.0 = !physics.0;
+        }
+    }
 }
 
 fn is_panel_open(open: &RibbonOpen, item: &'static str) -> bool {
@@ -1305,6 +1335,136 @@ fn draw_cameras_panel(
     );
 }
 
+// ─── Materials panel ────────────────────────────────────────────────
+//
+// Lets the user override per-material `StandardMaterial` properties
+// at runtime. Useful when an asset author shipped placeholder colours
+// instead of textures (Scout V2 with yellow wheels, Jackal with
+// `material_yellow` strips, …) — mutating the underlying asset
+// propagates the new colour to every mesh that bound this material,
+// no per-mesh override needed.
+
+fn draw_materials_panel(
+    mut contexts: EguiContexts,
+    open: Res<RibbonOpen>,
+    placement: Res<RibbonPlacement>,
+    accent: Res<AccentColor>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+    // Only entities tagged with `UsdPrimRef` came from the loaded
+    // USD asset — restrict the panel to those so it doesn't list
+    // glacial's grid materials, the gizmo lines, the ground floor,
+    // or any other internal viewer geometry.
+    usd_mesh_mats: Query<&MeshMaterial3d<StandardMaterial>, With<UsdPrimRef>>,
+) {
+    if !is_panel_open(&open, RIB_MATERIALS) {
+        return;
+    }
+    let Ok(ctx) = contexts.ctx_mut() else {
+        return;
+    };
+    let accent_col = accent.0;
+    let mut keep = true;
+
+    let mut bound: std::collections::HashSet<AssetId<StandardMaterial>> =
+        std::collections::HashSet::new();
+    for mm in usd_mesh_mats.iter() {
+        bound.insert(mm.0.id());
+    }
+
+    // Stable presentation order: by asset path / id.
+    let mut entries: Vec<(AssetId<StandardMaterial>, String)> = materials
+        .iter()
+        .filter(|(id, _)| bound.contains(id))
+        .map(|(id, _)| {
+            let label = asset_server
+                .get_path(id)
+                .map(|p| p.to_string())
+                .unwrap_or_else(|| format!("{id:?}"));
+            (id, label)
+        })
+        .collect();
+    entries.sort_by(|a, b| a.1.cmp(&b.1));
+
+    floating_window_for_item(
+        ctx,
+        RIBBONS,
+        RIBBON_ITEMS,
+        &placement,
+        RIB_MATERIALS,
+        "Materials",
+        egui::vec2(PANEL_W, PANEL_H),
+        &mut keep,
+        accent_col,
+        |pane| {
+            pane.section(
+                "materials_overview",
+                &format!("{} material(s)", entries.len()),
+                true,
+                |ui| {
+                    sub_caption(
+                        ui,
+                        "Edits update every mesh bound to that material.",
+                    );
+                },
+            );
+            for (id, label) in &entries {
+                let short = label
+                    .rsplit('/')
+                    .next()
+                    .unwrap_or(label)
+                    .chars()
+                    .take(48)
+                    .collect::<String>();
+                let section_id = format!("mat_{:?}", id);
+                pane.section(
+                    Box::leak(section_id.into_boxed_str()),
+                    Box::leak(short.into_boxed_str()),
+                    false,
+                    |ui| {
+                        let Some(mat) = materials.get_mut(*id) else {
+                            return;
+                        };
+                        ui.label(egui::RichText::new(label).small().monospace());
+                        ui.add_space(style::space::BLOCK);
+                        // Base colour. Bevy's StandardMaterial.base_color
+                        // is in linear sRGB; egui's color picker thinks
+                        // gamma-corrected sRGB. Round-trip through linear
+                        // so what the user sees in the picker matches
+                        // what gets stored.
+                        let linear = mat.base_color.to_linear();
+                        let mut rgb = [linear.red, linear.green, linear.blue];
+                        ui.horizontal(|ui| {
+                            ui.label("Base color:");
+                            if ui.color_edit_button_rgb(&mut rgb).changed() {
+                                mat.base_color = Color::LinearRgba(LinearRgba {
+                                    red: rgb[0],
+                                    green: rgb[1],
+                                    blue: rgb[2],
+                                    alpha: linear.alpha,
+                                });
+                            }
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Roughness:");
+                            ui.add(
+                                egui::Slider::new(&mut mat.perceptual_roughness, 0.0..=1.0)
+                                    .step_by(0.01),
+                            );
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Metallic:");
+                            ui.add(
+                                egui::Slider::new(&mut mat.metallic, 0.0..=1.0).step_by(0.01),
+                            );
+                        });
+                    },
+                );
+            }
+        },
+    );
+}
+
 // ─── Overlays panel ─────────────────────────────────────────────────
 
 fn draw_overlays_panel(
@@ -1359,6 +1519,12 @@ fn draw_overlays_panel(
                     ui,
                     "Physics gizmos (Y)",
                     &mut toggles.show_physics,
+                    accent_col,
+                );
+                toggle(
+                    ui,
+                    "Collider wireframes (C)",
+                    &mut toggles.show_colliders,
                     accent_col,
                 );
             });

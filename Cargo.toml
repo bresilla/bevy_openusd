@@ -4,15 +4,24 @@ resolver = "2"
 # slated for upstreaming into openusd-rs. Everything else (the plugin lib
 # AND the viewer binary) lives in this root package so the project is one
 # `cargo run` away from end-to-end.
-members = ["crates/usd_schemas"]
+members = ["crates/usd_schemas", "crates/usd_physics_markers", "crates/bevy_openusd_rapier"]
 exclude = ["xtra"]
 
-# Override the git-pulled `openusd` with a locally-patched clone of the
-# same revision. The patch is one fix to the USDC quaternion reader to
-# match Pixar's `GfQuat` memory layout (see `xtra/openusd-rs-patched`).
-# Slated to be upstreamed.
+# `cocktail` branch on bresilla/openusd: rolling integration of all
+# in-flight patches (find_layer relative refs, quat byte-order, …)
+# until each lands upstream. Local checkout still lives in
+# `xtra/openusd-rs` for editing; Cargo consumes the pushed branch.
 [patch."https://github.com/mxpv/openusd"]
-openusd = { path = "xtra/openusd-rs-patched" }
+openusd = { git = "https://github.com/bresilla/openusd", branch = "cocktail" }
+
+# Patch bevy_rapier3d 0.33 — fixes operator-precedence bug in
+# `writeback_rigid_bodies` where `Quat * Vec3 * Vec3` rotates the scale
+# vector before component-multiplying with translation. Triggers any
+# time a dynamic body has a parent with non-identity rotation (every
+# Isaac Sim asset, since the basis-rotation lives at the asset root).
+# See `xtra/bevy_rapier3d-patched/src/plugin/systems/rigid_body.rs`.
+[patch.crates-io]
+bevy_rapier3d = { path = "xtra/bevy_rapier3d-patched" }
 
 [package]
 name = "bevy_openusd"
@@ -47,6 +56,12 @@ openusd = { git = "https://github.com/mxpv/openusd", branch = "main" }
 # Schema layer on top of `openusd`. Lives as a workspace sibling so it can
 # be published / upstreamed independently once the reader helpers stabilise.
 usd_schemas = { path = "crates/usd_schemas" }
+
+# Backend-neutral marker components for UsdPhysics — shared contract
+# between this crate and engine adapters (bevy_openusd_rapier, etc.).
+# Lives in its own crate so adapters can depend on it without pulling
+# in the full loader.
+usd_physics_markers = { path = "crates/usd_physics_markers" }
 
 # `bevy` features cover both the lib (asset loader, scene projection) and
 # the viewer binary (windowing, gizmos, post-process). Cargo unifies feature
@@ -116,6 +131,11 @@ serde = { version = "1", features = ["derive"] }
 # Viewer-only deps — kept here because the bin lives in this same package.
 # Native file-picker dialog for the "Browse USD…" button.
 rfd = "0.15"
+# Physics simulation — wired into the viewer binary so loaded scenes
+# actually simulate (gravity, joints, articulations). The lib stays
+# physics-engine-agnostic; only the viewer binary depends on Rapier.
+bevy_rapier3d = "0.33"
+bevy_openusd_rapier = { path = "crates/bevy_openusd_rapier" }
 # VS-Code-style egui chrome matching `bevy_urdf`'s viewer.
 bevy_egui = { version = "0.39", default-features = false, features = [
     "default_fonts",

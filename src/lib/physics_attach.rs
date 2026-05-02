@@ -18,7 +18,7 @@ use bevy::math::{Quat, Vec3};
 use openusd::Stage;
 use openusd::sdf::{Path, Value};
 
-use crate::physics_markers::*;
+use usd_physics_markers::*;
 use usd_schemas::physics as ph;
 
 /// Stage-level conversion factors. Read once at the start of
@@ -481,7 +481,16 @@ fn convert_drive(d: ph::ReadDrive, meta: &StageMeta) -> UsdJointDrive {
     }
 }
 
-fn collider_shape_from_prim(stage: &Stage, path: &Path, meta: &StageMeta) -> UsdColliderShape {
+fn collider_shape_from_prim(stage: &Stage, path: &Path, _meta: &StageMeta) -> UsdColliderShape {
+    // Primitive collider dimensions stay in **scene units**, NOT
+    // pre-multiplied by `metersPerUnit`. The downstream Rapier adapter
+    // hands the raw shape to bevy_rapier; bevy_rapier's own
+    // `apply_collider_scale` system multiplies by the entity's
+    // `GlobalTransform.scale` every frame, and the scene-root scale
+    // we author already encodes the unit conversion. Pre-multiplying
+    // here would double-count it (Scout V2 reproduced this:
+    // `metersPerUnit=0.01` × scene-root scale `0.01` × shape `0.01`
+    // collapsed every collider to millimetre size).
     let type_name = stage
         .field::<String>(path.clone(), "typeName")
         .ok()
@@ -489,27 +498,22 @@ fn collider_shape_from_prim(stage: &Stage, path: &Path, meta: &StageMeta) -> Usd
         .unwrap_or_default();
     match type_name.as_str() {
         "Cube" => {
-            let size = read_double(stage, path, "size").unwrap_or(2.0) as f32 * meta.meters_per_unit;
+            let size = read_double(stage, path, "size").unwrap_or(2.0) as f32;
             UsdColliderShape::Cube { size }
         }
         "Sphere" => {
-            let radius =
-                read_double(stage, path, "radius").unwrap_or(1.0) as f32 * meta.meters_per_unit;
+            let radius = read_double(stage, path, "radius").unwrap_or(1.0) as f32;
             UsdColliderShape::Sphere { radius }
         }
         "Capsule" => {
-            let radius =
-                read_double(stage, path, "radius").unwrap_or(0.5) as f32 * meta.meters_per_unit;
-            let height =
-                read_double(stage, path, "height").unwrap_or(1.0) as f32 * meta.meters_per_unit;
+            let radius = read_double(stage, path, "radius").unwrap_or(0.5) as f32;
+            let height = read_double(stage, path, "height").unwrap_or(1.0) as f32;
             let axis = capsule_axis(stage, path);
             UsdColliderShape::Capsule { radius, height, axis }
         }
         "Cylinder" => {
-            let radius =
-                read_double(stage, path, "radius").unwrap_or(1.0) as f32 * meta.meters_per_unit;
-            let height =
-                read_double(stage, path, "height").unwrap_or(2.0) as f32 * meta.meters_per_unit;
+            let radius = read_double(stage, path, "radius").unwrap_or(1.0) as f32;
+            let height = read_double(stage, path, "height").unwrap_or(2.0) as f32;
             let axis = capsule_axis(stage, path);
             UsdColliderShape::Cylinder { radius, height, axis }
         }
@@ -517,7 +521,7 @@ fn collider_shape_from_prim(stage: &Stage, path: &Path, meta: &StageMeta) -> Usd
         "Plane" => UsdColliderShape::Plane,
         // Unknown geom type with CollisionAPI applied — fall through
         // to a unit cube to avoid a missing-shape adapter crash.
-        _ => UsdColliderShape::Cube { size: meta.meters_per_unit },
+        _ => UsdColliderShape::Cube { size: 1.0 },
     }
 }
 

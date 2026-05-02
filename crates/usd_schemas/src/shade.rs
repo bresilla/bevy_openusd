@@ -468,24 +468,70 @@ pub fn read_preview_material(
     stage: &openusd::Stage,
     material: &Path,
 ) -> Result<Option<ReadPreviewMaterial>> {
-    let Some(shader) = resolve_surface_shader(stage, material)? else {
+    let Some((shader, dialect)) = resolve_surface_shader(stage, material)? else {
         return Ok(None);
     };
 
     // Dispatch by `info:id` so we pick the right input-name mapping.
+    // Isaac Sim asset shaders typically declare `info:mdl:sourceAsset`
+    // (= path to OmniPBR.mdl) plus a subIdentifier. `info:id` may be
+    // missing entirely. Match on any of the three so OmniPBR works
+    // regardless of how the shader is declared.
     let shader_id = read_scalar_token(stage, &shader, "info:id")?;
-    let channels: &[(&str, ColourSetter, ScalarSetter, TextureSetter)] = match shader_id
+    let mdl_subid = read_scalar_token(stage, &shader, "info:mdl:sourceAsset:subIdentifier")?;
+    let mdl_source = read_scalar_asset(stage, &shader, "info:mdl:sourceAsset")?;
+    let mdl_basename = mdl_source.as_deref().and_then(|p| {
+        std::path::Path::new(p)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string())
+    });
+    // Pick the input vocabulary by which output dialect the shader
+    // was reached through. Some Omniverse-authored shaders carry
+    // `info:id="UsdPreviewSurface"` for compatibility but only define
+    // OmniPBR-style inputs (`diffuse_color_constant`, …) under
+    // `outputs:mdl:surface` — trusting `info:id` then reads the wrong
+    // attributes and the material renders as default white. The
+    // connection dialect is the more reliable signal.
+    //
+    // For MDL connections the actual MDL function declared via
+    // `info:mdl:sourceAsset[:subIdentifier]` still drives which
+    // OmniPBR variant we pick (OmniPBR vs OmniSurface vs …).
+    let mdl_id = mdl_subid
         .as_deref()
-    {
-        Some("UsdPreviewSurface") | Some("ND_UsdPreviewSurface_surfaceshader") => {
-            PREVIEW_CHANNELS
-        }
-        Some("ND_standard_surface_surfaceshader") => MATERIALX_STD_SURFACE_CHANNELS,
-        Some("OmniPBR") => OMNIPBR_CHANNELS,
-        Some("OmniSurface") | Some("OmniSurfaceLite") => OMNISURFACE_CHANNELS,
-        _ => return Ok(None),
+        .or(mdl_basename.as_deref());
+    // Pick the input vocabulary by which output dialect carried the
+    // shader connection. Some Omniverse-authored shaders wire an MDL
+    // surface to a UsdPreviewSurface-id shader whose actual inputs
+    // are the OmniPBR `*_constant` / `*_texture` family — trusting
+    // `info:id` then reads the wrong attribute names and the
+    // material renders default. The connection dialect is the more
+    // reliable signal.
+    let channels: &[(&str, ColourSetter, ScalarSetter, TextureSetter)] = match dialect {
+        SurfaceDialect::Mdl => match mdl_id {
+            Some("OmniSurface") | Some("OmniSurfaceLite") | Some("OmniSurfaceBase") => {
+                OMNISURFACE_CHANNELS
+            }
+            _ => OMNIPBR_CHANNELS,
+        },
+        SurfaceDialect::MaterialX => match shader_id.as_deref() {
+            Some("ND_standard_surface_surfaceshader") => MATERIALX_STD_SURFACE_CHANNELS,
+            _ => PREVIEW_CHANNELS,
+        },
+        SurfaceDialect::Preview => match shader_id.as_deref() {
+            Some("UsdPreviewSurface") | Some("ND_UsdPreviewSurface_surfaceshader") | None => {
+                PREVIEW_CHANNELS
+            }
+            Some("OmniPBR") | Some("OmniPBR_Opacity") | Some("OmniPBR_ClearCoat") => {
+                OMNIPBR_CHANNELS
+            }
+            Some("OmniSurface") | Some("OmniSurfaceLite") | Some("OmniSurfaceBase") => {
+                OMNISURFACE_CHANNELS
+            }
+            Some("ND_standard_surface_surfaceshader") => MATERIALX_STD_SURFACE_CHANNELS,
+            _ => return Ok(None),
+        },
     };
-
     let mut out = ReadPreviewMaterial::default();
     for (channel, bind_colour, bind_scalar, bind_texture) in channels {
         let (value, texture) = resolve_channel(stage, material, &shader, channel)?;
@@ -507,17 +553,38 @@ pub fn read_preview_material(
 /// last is what Isaac Sim, Kit and other Omniverse-authored stages
 /// emit; without recognising it our material reader couldn't see
 /// any of those scenes' shaders.
+/// Which surface-output the material's shader connection came through.
+/// This decides which input-name vocabulary the channel reader uses
+/// — see `read_preview_material`.
+#[derive(Copy, Clone, Debug)]
+enum SurfaceDialect {
+    /// `outputs:surface` — native OpenUSD UsdPreviewSurface inputs.
+    Preview,
+    /// `outputs:mtlx:surface` — MaterialX (UsdPreviewSurface or
+    /// standard_surface input names depending on the `info:id`).
+    MaterialX,
+    /// `outputs:mdl:surface` — NVIDIA MDL pipeline (OmniPBR /
+    /// OmniSurface / etc., always with `*_constant` and `*_texture`
+    /// suffixes regardless of the shader's compatibility `info:id`).
+    Mdl,
+}
+
 fn resolve_surface_shader(
     stage: &openusd::Stage,
     material: &Path,
-) -> Result<Option<Path>> {
-    for attr_name in ["outputs:surface", "outputs:mtlx:surface", "outputs:mdl:surface"] {
+) -> Result<Option<(Path, SurfaceDialect)>> {
+    let outputs = [
+        ("outputs:surface", SurfaceDialect::Preview),
+        ("outputs:mtlx:surface", SurfaceDialect::MaterialX),
+        ("outputs:mdl:surface", SurfaceDialect::Mdl),
+    ];
+    for (attr_name, dialect) in outputs {
         let attr_path = material
             .append_property(attr_name)
             .map_err(anyhow::Error::from)?;
         let targets = read_path_list(stage, &attr_path, "connectionPaths")?;
         if let Some(t) = targets.into_iter().next() {
-            return Ok(Some(t.prim_path()));
+            return Ok(Some((t.prim_path(), dialect)));
         }
     }
     Ok(None)
@@ -723,6 +790,7 @@ const OMNISURFACE_CHANNELS: &[(&str, ColourSetter, ScalarSetter, TextureSetter)]
 ];
 
 /// Authored value as resolved through the interface pattern.
+#[derive(Debug)]
 enum ResolvedValue {
     Color3([f32; 3]),
     Scalar(f32),
@@ -920,6 +988,15 @@ fn read_path_list(stage: &openusd::Stage, attr: &Path, field: &str) -> Result<Ve
 fn read_scalar_token(stage: &openusd::Stage, prim: &Path, attr: &str) -> Result<Option<String>> {
     let attr_path = prim.append_property(attr).map_err(anyhow::Error::from)?;
     Ok(match attr_default_value(stage, &attr_path)? {
+        Some(Value::Token(s)) | Some(Value::String(s)) => Some(s),
+        _ => None,
+    })
+}
+
+fn read_scalar_asset(stage: &openusd::Stage, prim: &Path, attr: &str) -> Result<Option<String>> {
+    let attr_path = prim.append_property(attr).map_err(anyhow::Error::from)?;
+    Ok(match attr_default_value(stage, &attr_path)? {
+        Some(Value::AssetPath(p)) => Some(p),
         Some(Value::Token(s)) | Some(Value::String(s)) => Some(s),
         _ => None,
     })

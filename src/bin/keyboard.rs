@@ -80,6 +80,9 @@ fn handle_keys(
     if keys.just_pressed(KeyCode::KeyY) {
         toggles.show_physics = !toggles.show_physics;
     }
+    if keys.just_pressed(KeyCode::KeyC) {
+        toggles.show_colliders = !toggles.show_colliders;
+    }
     if keys.just_pressed(KeyCode::KeyR) {
         reload.requested = true;
     }

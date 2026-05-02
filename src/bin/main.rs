@@ -31,6 +31,9 @@ use bevy_egui::EguiPlugin;
 use bevy_openusd::{UsdAsset, UsdLoaderSettings, UsdPlugin, UsdPrimRef};
 
 use crate::camera::{ArcballCamera, ArcballCameraPlugin};
+use bevy_glacial::prelude::{
+    AxisGizmo, AxisGizmoPlugin, ChaseCamera, GroundGrid, GroundGridPlugin,
+};
 use crate::keyboard::ViewerKeyboardPlugin;
 use crate::overlays::{OverlaysPlugin, SceneExtent};
 use crate::state::{
@@ -79,10 +82,53 @@ fn main() {
     .add_plugins(bevy::pbr::wireframe::WireframePlugin::default())
     .add_plugins(UsdPlugin)
     .add_plugins(ArcballCameraPlugin)
+    // bevy_glacial's LOD ground grid + R/G/B axis triad (replaces
+    // our hand-rolled grid + axes overlay code). Grid follows
+    // whichever entity carries `ChaseCamera` — we tag our
+    // arcball-camera entity with one and sync focus / distance
+    // every frame in `sync_chase_camera`.
+    .add_plugins(GroundGridPlugin)
+    .add_plugins(AxisGizmoPlugin)
+    // Match the bevy_frost demo's space-y look: dark navy background
+    // + cool-blue LOD grid that fades into the void. Without the
+    // solid ground floor and against this background, the LOD grid
+    // reads as the only world structure — appearing to extend to
+    // infinity instead of looking like a flat plane.
+    .insert_resource(ClearColor(Color::srgb(0.06, 0.08, 0.12)))
+    .insert_resource(GroundGrid {
+        visible: true,
+        color: Color::srgba(0.30, 0.38, 0.50, 0.42),
+    })
+    // Cool steel-blue UI accent matching the dark navy background.
+    // The frost demo defaults to neutral gray; we override with a
+    // saturated blue so highlighted ribbon icons / section
+    // separators / hover states pop against the world.
+    .insert_resource(bevy_frost::prelude::AccentColor(
+        bevy_egui::egui::Color32::from_rgb(0x4A, 0x90, 0xE2),
+    ))
     .add_plugins(ViewerUiPlugin)
     .add_plugins(ViewerKeyboardPlugin)
     .add_plugins(OverlaysPlugin)
-    .add_plugins(crate::physics_overlay::PhysicsOverlayPlugin)
+    .add_plugins(crate::physics_overlay::PhysicsOverlayPlugin);
+
+    // Rapier + the USD physics adapter are always wired so the play
+    // button on the ribbon can flip simulation on at runtime. Initial
+    // run state defaults OFF; `BEVY_OPENUSD_PHYSICS=1` makes it start
+    // playing immediately.
+    let physics_initially_active = std::env::var("BEVY_OPENUSD_PHYSICS")
+        .ok()
+        .map(|v| matches!(v.as_str(), "1" | "true" | "on"))
+        .unwrap_or(false);
+    app.insert_resource(PhysicsActive(physics_initially_active))
+        .add_plugins(bevy_rapier3d::plugin::RapierPhysicsPlugin::<bevy_rapier3d::plugin::NoUserData>::default())
+        .add_plugins(bevy_rapier3d::render::RapierDebugRenderPlugin::default())
+        .add_plugins(bevy_openusd_rapier::RapierAdapterPlugin)
+        .add_systems(Startup, spawn_physics_ground)
+        .add_systems(Update, lift_scene_off_ground)
+        .add_systems(Update, sync_collider_debug_visibility)
+        .add_systems(Update, sync_physics_active);
+
+    app
     .init_resource::<Spawned>()
     .init_resource::<ReloadRequest>()
     .init_resource::<LoadRequest>()
@@ -112,6 +158,8 @@ fn main() {
             fit_camera_once,
             debug_origin_prims_once,
             debug_dump_layout_once,
+            debug_dump_physics_once,
+            debug_dump_physics_tick,
             handle_usd_hot_reload,
             apply_load_request,
             apply_fly_to,
@@ -124,6 +172,8 @@ fn main() {
             drive_blend_shape_weights,
             draw_joint_gizmos,
             hide_meshes_on_startup,
+            sync_chase_camera,
+            sync_ground_grid_visibility,
         ),
     );
     let hide_meshes = std::env::var("BEVY_OPENUSD_HIDE_MESHES")
@@ -233,6 +283,116 @@ fn load_stage(
     );
 }
 
+/// One-shot: after the scene has had a few ticks to populate (so
+/// physics colliders exist and `SceneExtent` reports the asset's true
+/// world bounds), shift the scene root up so its lowest point sits a
+/// hair above the ground plane (Y=0). Without this, robotics assets
+/// authored with their reference frame at the chassis centre spawn
+/// with wheels deep inside the ground; the contact solver then
+/// launches the chassis on tick 0.
+fn lift_scene_off_ground(
+    extent: Res<crate::overlays::SceneExtent>,
+    mut scene_roots: Query<&mut Transform, With<SceneRoot>>,
+    mut done: Local<bool>,
+) {
+    if *done || extent.count == 0 {
+        return;
+    }
+    // Wait until the bbox has settled (more than a couple prims), so
+    // we don't lift based on the partial extent of the first few
+    // arrived prims.
+    if extent.count < 8 {
+        return;
+    }
+    let lowest = extent.min.y;
+    let target_clearance = 0.01_f32;
+    if lowest < target_clearance {
+        let lift = target_clearance - lowest;
+        for mut t in scene_roots.iter_mut() {
+            t.translation.y += lift;
+        }
+        info!(
+            "physics: lifted scene by {lift:.3} m so lowest extent y={lowest:.3} clears the ground"
+        );
+    }
+    *done = true;
+}
+
+/// Static ground collider at Y=0 (invisible — the WorldGrid overlay
+/// provides the visual reference). Only spawned when physics is on.
+/// 100 m × 100 m so the robot doesn't slide off the edge during long
+/// idle simulations.
+/// Mirror `ArcballCamera` → `ChaseCamera` each frame so
+/// bevy_glacial's `GroundGridPlugin` LOD math sees our actual viewport.
+fn sync_chase_camera(mut q: Query<(&ArcballCamera, &mut ChaseCamera)>) {
+    for (arc, mut chase) in q.iter_mut() {
+        chase.focus = arc.focus;
+        chase.distance = arc.distance;
+        chase.yaw = arc.yaw;
+        chase.elevation = arc.elevation;
+    }
+}
+
+/// Drive bevy_glacial's `GroundGrid.visible` from our overlay toggle.
+fn sync_ground_grid_visibility(
+    toggles: Res<crate::overlays::DisplayToggles>,
+    mut grid: ResMut<GroundGrid>,
+) {
+    if grid.visible != toggles.show_world_grid {
+        grid.visible = toggles.show_world_grid;
+    }
+}
+
+/// Wire `DisplayToggles.show_colliders` (Overlays panel + hotkey) to
+/// bevy_rapier's debug-render context. Wraps with `Option<ResMut>` so
+/// we don't panic if the rapier render plugin is missing (physics off).
+fn sync_collider_debug_visibility(
+    toggles: Res<crate::overlays::DisplayToggles>,
+    debug: Option<ResMut<bevy_rapier3d::render::DebugRenderContext>>,
+) {
+    if let Some(mut debug) = debug {
+        if debug.enabled != toggles.show_colliders {
+            debug.enabled = toggles.show_colliders;
+        }
+    }
+}
+
+/// Run-state for the Rapier simulation. The play button on the ribbon
+/// flips this; `sync_physics_active` mirrors it into every
+/// `RapierConfiguration` so the pipeline starts and stops on demand.
+#[derive(Resource, Clone, Copy, Debug)]
+pub struct PhysicsActive(pub bool);
+
+fn sync_physics_active(
+    active: Res<PhysicsActive>,
+    mut configs: Query<&mut bevy_rapier3d::plugin::RapierConfiguration>,
+) {
+    for mut cfg in &mut configs {
+        if cfg.physics_pipeline_active != active.0 {
+            cfg.physics_pipeline_active = active.0;
+        }
+    }
+}
+
+fn spawn_physics_ground(mut commands: Commands) {
+    use bevy_rapier3d::geometry::Collider;
+    use bevy_rapier3d::render::ColliderDebug;
+    // Invisible static ground — just collision geometry. The visual
+    // "floor" comes from glacial's `GroundGridPlugin` which renders
+    // an LOD grid that fades to infinity against the dark
+    // ClearColor, no solid plane needed. `ColliderDebug::NeverRender`
+    // keeps Rapier's debug renderer from drawing this giant 100×100 m
+    // box around the whole scene when the user toggles
+    // collider-wireframe view on.
+    commands.spawn((
+        Name::new("PhysicsGround"),
+        Transform::from_xyz(0.0, -0.5, 0.0),
+        Visibility::Hidden,
+        Collider::cuboid(50.0, 0.5, 50.0),
+        ColliderDebug::NeverRender,
+    ));
+}
+
 fn spawn_camera_and_ground(mut commands: Commands) {
     use bevy::core_pipeline::tonemapping::Tonemapping;
     use bevy::post_process::bloom::Bloom;
@@ -270,6 +430,20 @@ fn spawn_camera_and_ground(mut commands: Commands) {
             distance: 4.0,
             ..default()
         },
+        // bevy_glacial's GroundGridPlugin queries `&ChaseCamera` to
+        // pick the LOD level. Tag our arcball-camera entity so the
+        // grid follows our actual viewport without us having to
+        // adopt their full ChaseCameraPlugin (we keep our orbit
+        // controls). `sync_chase_camera` mirrors focus/distance/yaw
+        // every frame.
+        ChaseCamera::default(),
+    ));
+    // World-origin axis triad — replaces our hand-rolled
+    // `draw_axes` overlay system.
+    commands.spawn((
+        Name::new("WorldAxes"),
+        Transform::default(),
+        AxisGizmo::default(),
     ));
     // Indoor-overcast lux. With HDR + AgX a single 5k-lux sun reads
     // closer to a quick-look studio render than 50k did — an order of
@@ -355,6 +529,220 @@ fn debug_dump_layout_once(
         info!("layout dump: wrote {} rows to {path}", rows.len());
     }
     *done = true;
+}
+
+/// One-shot dump of every rigid body's world pose + every joint's
+/// authored frames + computed world-anchor positions on each side.
+/// Helps verify the projection got the joint topology right BEFORE
+/// physics has any chance to touch the bodies. Also reports, for
+/// every visual mesh, whether a `UsdRigidBody` ancestor exists in
+/// the Bevy hierarchy — that's what lets Rapier's body movement
+/// drag the mesh along after a step. Set
+/// `BEVY_OPENUSD_DEBUG_PHYSICS=1` to enable.
+fn debug_dump_physics_once(
+    bodies: Query<(&UsdPrimRef, &GlobalTransform), With<bevy_openusd::UsdRigidBody>>,
+    joints: Query<(&UsdPrimRef, &bevy_openusd::UsdPhysicsJoint)>,
+    body_transforms: Query<&GlobalTransform>,
+    meshes: Query<(Entity, Option<&UsdPrimRef>), With<bevy::mesh::Mesh3d>>,
+    colliders: Query<(Entity, Option<&UsdPrimRef>), With<bevy_openusd::UsdCollider>>,
+    rigid_bodies: Query<(), With<bevy_openusd::UsdRigidBody>>,
+    parents: Query<&ChildOf>,
+    prim_refs: Query<&UsdPrimRef>,
+    local_transforms: Query<&Transform>,
+    extent: Res<SceneExtent>,
+    mut done: Local<bool>,
+) {
+    if *done || extent.count == 0 {
+        return;
+    }
+    if std::env::var("BEVY_OPENUSD_DEBUG_PHYSICS").ok().as_deref() != Some("1") {
+        *done = true;
+        return;
+    }
+    info!("==== DEBUG PHYSICS DUMP ====");
+    info!("---- Rigid bodies (pre-physics world pose) ----");
+    let mut body_rows: Vec<_> = bodies.iter().collect();
+    body_rows.sort_by(|a, b| a.0.path.cmp(&b.0.path));
+    for (pr, gt) in &body_rows {
+        let t = gt.compute_transform();
+        info!(
+            "  body {:<40} pos={:>+7.4?} rot={:>+7.4?}",
+            pr.path, t.translation, t.rotation
+        );
+    }
+    info!("---- Joints (authored local frames + computed world anchors) ----");
+    let mut joint_rows: Vec<_> = joints.iter().collect();
+    joint_rows.sort_by(|a, b| a.0.path.cmp(&b.0.path));
+    for (pr, joint) in &joint_rows {
+        let body0_pose = joint.body0.and_then(|e| body_transforms.get(e).ok());
+        let body1_pose = joint.body1.and_then(|e| body_transforms.get(e).ok());
+        let world_anchor0 = body0_pose.map(|gt| {
+            let t = gt.compute_transform();
+            t.translation + t.rotation * joint.local_pos0
+        });
+        let world_anchor1 = body1_pose.map(|gt| {
+            let t = gt.compute_transform();
+            t.translation + t.rotation * joint.local_pos1
+        });
+        let agree = match (world_anchor0, world_anchor1) {
+            (Some(a), Some(b)) => format!("Δ={:.5}", (a - b).length()),
+            _ => "(missing body)".to_string(),
+        };
+        info!(
+            "  joint {:<35} kind={:?} axis={:?}",
+            pr.path, joint.kind, joint.axis
+        );
+        info!(
+            "    body0={:?} local_pos0={:+.4?} local_rot0={:+.4?} → world_anchor0={:?}",
+            joint.body0, joint.local_pos0, joint.local_rot0, world_anchor0
+        );
+        info!(
+            "    body1={:?} local_pos1={:+.4?} local_rot1={:+.4?} → world_anchor1={:?}",
+            joint.body1, joint.local_pos1, joint.local_rot1, world_anchor1
+        );
+        info!("    anchors {agree} (should be ~0)");
+    }
+    // Walk every visual mesh up its parent chain looking for a
+    // `UsdRigidBody`. If a mesh has no body ancestor, Rapier moving
+    // the body won't drag the mesh along — that's the "scattered
+    // when physics enabled" symptom.
+    let find_body_ancestor = |mut e: Entity| -> Option<(Entity, String)> {
+        loop {
+            if rigid_bodies.get(e).is_ok() {
+                let p = prim_refs
+                    .get(e)
+                    .map(|pr| pr.path.clone())
+                    .unwrap_or_else(|_| "<no path>".into());
+                return Some((e, p));
+            }
+            match parents.get(e) {
+                Ok(c) => e = c.parent(),
+                Err(_) => return None,
+            }
+        }
+    };
+    info!("---- Visual meshes: full ancestor chain ----");
+    let mut with = 0usize;
+    let mut without = 0usize;
+    let mut mesh_rows: Vec<_> = meshes.iter().collect();
+    mesh_rows.sort_by_key(|(_, pr)| pr.map(|p| p.path.clone()).unwrap_or_default());
+    for (e, pr) in &mesh_rows {
+        let mesh_path = pr.map(|p| p.path.as_str()).unwrap_or("<no UsdPrimRef>");
+        match find_body_ancestor(*e) {
+            Some((_, body_path)) => {
+                with += 1;
+                info!("  mesh {mesh_path} (body ancestor {body_path}):");
+                // Walk from this entity up to the body and print each
+                // hop's local Transform — that's the chain Bevy
+                // multiplies to produce the mesh's GlobalTransform
+                // every frame. If any hop has a translation that
+                // already encodes the body's world position (instead
+                // of just an offset relative to its parent), then
+                // moving the body will displace the visuals by that
+                // amount.
+                let mut cursor = *e;
+                let mut depth = 0;
+                loop {
+                    let path = prim_refs
+                        .get(cursor)
+                        .map(|p| p.path.as_str().to_string())
+                        .unwrap_or_else(|_| format!("<entity {:?}>", cursor));
+                    let t = local_transforms.get(cursor).ok();
+                    if let Some(t) = t {
+                        info!(
+                            "    [{depth}] {path}  local_t={:+.4?} local_r={:+.4?}",
+                            t.translation, t.rotation
+                        );
+                    } else {
+                        info!("    [{depth}] {path}  (no Transform)");
+                    }
+                    if rigid_bodies.get(cursor).is_ok() {
+                        break;
+                    }
+                    match parents.get(cursor) {
+                        Ok(c) => {
+                            cursor = c.parent();
+                            depth += 1;
+                        }
+                        Err(_) => break,
+                    }
+                }
+            }
+            None => {
+                without += 1;
+                info!("  mesh {mesh_path} → ⚠ NO body ancestor (won't follow physics)");
+            }
+        }
+    }
+    info!(
+        "  → {with} mesh(es) under a body, {without} mesh(es) NOT under any body"
+    );
+    info!("---- Colliders vs. body ancestry ----");
+    let mut col_rows: Vec<_> = colliders.iter().collect();
+    col_rows.sort_by_key(|(_, pr)| pr.map(|p| p.path.clone()).unwrap_or_default());
+    for (e, pr) in &col_rows {
+        let col_path = pr.map(|p| p.path.as_str()).unwrap_or("<no UsdPrimRef>");
+        match find_body_ancestor(*e) {
+            Some((_, body_path)) => info!("  collider {col_path} → body ancestor {body_path}"),
+            None => info!("  collider {col_path} → ⚠ NO body ancestor"),
+        }
+    }
+    info!("==== END PHYSICS DUMP ====");
+    *done = true;
+}
+
+/// Recurring sample of body+mesh world poses after physics has had a
+/// chance to step. Lets us see whether visual meshes drift away from
+/// their body ancestor over time. Set
+/// `BEVY_OPENUSD_DEBUG_PHYSICS_TICK=1` to enable; emits every ~120
+/// frames.
+fn debug_dump_physics_tick(
+    bodies: Query<(&UsdPrimRef, &Transform, &GlobalTransform), With<bevy_openusd::UsdRigidBody>>,
+    meshes: Query<(Entity, &UsdPrimRef, &Transform, &GlobalTransform), With<bevy::mesh::Mesh3d>>,
+    rigid_bodies: Query<(), With<bevy_openusd::UsdRigidBody>>,
+    parents: Query<&ChildOf>,
+    prim_refs: Query<&UsdPrimRef>,
+    mut counter: Local<u32>,
+) {
+    if std::env::var("BEVY_OPENUSD_DEBUG_PHYSICS_TICK").ok().as_deref() != Some("1") {
+        return;
+    }
+    *counter += 1;
+    if *counter % 120 != 0 {
+        return;
+    }
+    let find_body_ancestor = |mut e: Entity| -> Option<(Entity, String)> {
+        loop {
+            if rigid_bodies.get(e).is_ok() {
+                let p = prim_refs
+                    .get(e)
+                    .map(|pr| pr.path.clone())
+                    .unwrap_or_else(|_| "<no path>".into());
+                return Some((e, p));
+            }
+            match parents.get(e) {
+                Ok(c) => e = c.parent(),
+                Err(_) => return None,
+            }
+        }
+    };
+    info!("==== PHYSICS TICK SAMPLE (frame {}) ====", *counter);
+    for (pr, t, gt) in &bodies {
+        let gtt = gt.compute_transform();
+        info!(
+            "  body {} | local pos={:+.4?} rot={:+.4?} | global pos={:+.4?} rot={:+.4?}",
+            pr.path, t.translation, t.rotation, gtt.translation, gtt.rotation
+        );
+    }
+    for (e, pr, t, gt) in &meshes {
+        let gtt = gt.compute_transform();
+        let body = find_body_ancestor(e).map(|(_, p)| p).unwrap_or_default();
+        info!(
+            "  mesh {} (body {}) | local pos={:+.4?} rot={:+.4?} | global pos={:+.4?} rot={:+.4?}",
+            pr.path, body, t.translation, t.rotation, gtt.translation, gtt.rotation
+        );
+    }
+    info!("==== END TICK SAMPLE ====");
 }
 
 fn debug_origin_prims_once(

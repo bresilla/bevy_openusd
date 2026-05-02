@@ -15,7 +15,6 @@ pub mod tetmesh;
 mod light;
 mod material;
 pub mod mesh;
-pub mod physics_markers;
 pub(crate) mod physics_attach;
 pub mod prim_ref;
 mod texture;
@@ -27,9 +26,11 @@ pub use asset::{
     VariantSelection, VariantSet, author_variant_session_layer, parse_variant_label,
     variant_label,
 };
-pub use physics_markers::{
-    UsdArticulationRoot, UsdCollider, UsdCollisionApprox, UsdCollisionFilter, UsdCollisionGroup,
-    UsdColliderShape, UsdDof, UsdDriveType, UsdJointDrive, UsdJointKind, UsdJointLimit, UsdMass,
+// Re-exports from the shared marker crate so existing consumers keep
+// importing from `bevy_openusd::*` without knowing about the split.
+pub use usd_physics_markers::{
+    UsdArticulationRoot, UsdCollider, UsdColliderShape, UsdCollisionApprox, UsdCollisionFilter,
+    UsdCollisionGroup, UsdDof, UsdDriveType, UsdJointDrive, UsdJointKind, UsdJointLimit, UsdMass,
     UsdPhysicsJoint, UsdPhysicsMaterial, UsdPhysicsScene, UsdRigidBody,
 };
 pub use prim_ref::{
