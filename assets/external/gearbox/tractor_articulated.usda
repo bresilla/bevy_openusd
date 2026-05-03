@@ -1,0 +1,436 @@
+#usda 1.0
+(
+    defaultPrim = "robot"
+    upAxis = "Z"
+    metersPerUnit = 1
+    kilogramsPerUnit = 1
+    customLayerData = {
+        string creator = "rigged tractor: chassis + 4 wheels (steering on front), 0.25x scale baked"
+    }
+)
+
+# Wheel centers in WORLD (after 0.25x scale, original /4):
+#   BL:  (+0.8475, +1.14, +0.755)
+#   BR:  (-0.8375, +1.14, +0.755)
+#   FL:  (+0.79,   -1.23, +0.525)
+#   FR:  (-0.7775, -1.23, +0.525)
+#
+# Collision strategy:
+#   - Wheels carry convex-hull colliders on the tyre — they're the only
+#     things that need to interact with the ground and with obstacles.
+#   - Chassis is COLLIDER-LESS: it floats on its wheels via joints, same
+#     way a real vehicle works. Adding hulls on every m* fragment causes
+#     them to bulge past the visual silhouette, overlap with the wheel
+#     hulls at spawn, and the contact solver scatters everything.
+#   - Front wheel rigid bodies are SIBLINGS of the steer link (not nested
+#     inside) — nested rigid bodies hit transform writeback ordering
+#     issues that drift them away from their parent each frame.
+
+def Xform "robot" (
+    prepend apiSchemas = ["PhysicsArticulationRootAPI"]
+)
+{
+    def Scope "Materials"
+    {
+        def Material "rim_red"
+        {
+            color3f inputs:diffuseColor = (0.78, 0.05, 0.05)
+            float inputs:opacity = 1.0
+            float inputs:roughness = 0.45
+            float inputs:metallic = 0.05
+            token outputs:surface.connect = </robot/Materials/rim_red/Surface.outputs:surface>
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </robot/Materials/rim_red.inputs:diffuseColor>
+                float inputs:opacity.connect = </robot/Materials/rim_red.inputs:opacity>
+                float inputs:roughness.connect = </robot/Materials/rim_red.inputs:roughness>
+                float inputs:metallic.connect = </robot/Materials/rim_red.inputs:metallic>
+                token outputs:surface
+            }
+        }
+    }
+
+    # =================== CHASSIS (no colliders, see header note) ===================
+    def Xform "chassis" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 2000.0
+
+        def Xform "m0"  (prepend references = @./tractor.usdc@</root/mesh0_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh0_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m1"  (prepend references = @./tractor.usdc@</root/mesh1_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh1_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m2"  (prepend references = @./tractor.usdc@</root/mesh2_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh2_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m3"  (prepend references = @./tractor.usdc@</root/mesh3_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh3_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m4"  (prepend references = @./tractor.usdc@</root/mesh4_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh4_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m5"  (prepend references = @./tractor.usdc@</root/mesh5_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh5_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m6"  (prepend references = @./tractor.usdc@</root/mesh6_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh6_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m7"  (prepend references = @./tractor.usdc@</root/mesh7_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh7_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m8"  (prepend references = @./tractor.usdc@</root/mesh8_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh8_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m9"  (prepend references = @./tractor.usdc@</root/mesh9_dat_>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh9_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m10" (prepend references = @./tractor.usdc@</root/mesh10_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh10_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+            {
+                uniform token physics:approximation = "convexHull"
+                rel material:binding = </robot/Materials/rim_red>
+            }
+        }
+        def Xform "m11" (prepend references = @./tractor.usdc@</root/mesh11_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh11_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m12" (prepend references = @./tractor.usdc@</root/mesh12_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh12_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m13" (prepend references = @./tractor.usdc@</root/mesh13_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh13_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m14" (prepend references = @./tractor.usdc@</root/mesh14_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh14_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m15" (prepend references = @./tractor.usdc@</root/mesh15_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh15_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m16" (prepend references = @./tractor.usdc@</root/mesh16_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh16_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+        def Xform "m19" (prepend references = @./tractor.usdc@</root/mesh19_dat>)
+        {
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+            over "mesh19_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            { uniform token physics:approximation = "convexHull" }
+        }
+    }
+
+    # =================== REAR WHEELS ===================
+    # Tyre carries a convex-hull collider; rim is visual-only.
+
+    def Xform "wheel_back_left" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 200.0
+        double3 xformOp:translate = (0.8475, 1.14, 0.755)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "tyre" (prepend references = @./tractor.usdc@</root/wheel_back_left_tyre>)
+        {
+            double3 xformOp:translate = (0.8375, -1.14, -0.755)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "sub01_005" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            {
+                uniform token physics:approximation = "convexHull"
+            }
+        }
+        def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_back_left_rim>)
+        {
+            double3 xformOp:translate = (-0.8475, -1.14, -0.755)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "mesh17_dat_003" (prepend apiSchemas = ["MaterialBindingAPI"])
+            {
+                rel material:binding = </robot/Materials/rim_red>
+            }
+        }
+    }
+
+    def Xform "wheel_back_right" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 200.0
+        double3 xformOp:translate = (-0.8375, 1.14, 0.755)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "tyre" (prepend references = @./tractor.usdc@</root/wheel_back_right_tyre>)
+        {
+            double3 xformOp:translate = (0.8375, -1.14, -0.755)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "sub01_006" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            {
+                uniform token physics:approximation = "convexHull"
+            }
+        }
+        def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_back_right_rim>)
+        {
+            double3 xformOp:translate = (0.8375, -1.14, -0.755)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "mesh17_dat_004" (prepend apiSchemas = ["MaterialBindingAPI"])
+            {
+                rel material:binding = </robot/Materials/rim_red>
+            }
+        }
+    }
+
+    # =================== FRONT STEERING LINKS ===================
+    # Steer link is just the kingpin/strut — no visual mesh, no collider.
+    # The wheel rigid body is a SIBLING below.
+
+    def Xform "steer_front_left" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 50.0
+        double3 xformOp:translate = (0.79, -1.23, 0.525)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "steer_front_right" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 50.0
+        double3 xformOp:translate = (-0.7775, -1.23, 0.525)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # =================== FRONT WHEELS (siblings, not nested) ===================
+
+    def Xform "wheel_front_left" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 110.0
+        double3 xformOp:translate = (0.79, -1.23, 0.525)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "tyre" (prepend references = @./tractor.usdc@</root/wheel_front_left_tyre>)
+        {
+            double3 xformOp:translate = (-0.79, 1.23, -0.525)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "sub01_004" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            {
+                uniform token physics:approximation = "convexHull"
+            }
+        }
+        def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_front_left_rim>)
+        {
+            double3 xformOp:translate = (-0.79, 1.23, -0.525)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "mesh17_dat_002" (prepend apiSchemas = ["MaterialBindingAPI"])
+            {
+                rel material:binding = </robot/Materials/rim_red>
+            }
+        }
+    }
+
+    def Xform "wheel_front_right" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        float physics:mass = 110.0
+        double3 xformOp:translate = (-0.7775, -1.23, 0.525)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "tyre" (prepend references = @./tractor.usdc@</root/wheel_front_right_tyre>)
+        {
+            double3 xformOp:translate = (0.7775, 1.23, -0.525)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "sub01_003" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            {
+                uniform token physics:approximation = "convexHull"
+            }
+        }
+        def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_front_right_rim>)
+        {
+            double3 xformOp:translate = (0.7775, 1.23, -0.525)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "mesh17_dat_001" (prepend apiSchemas = ["MaterialBindingAPI"])
+            {
+                rel material:binding = </robot/Materials/rim_red>
+            }
+        }
+    }
+    # =================== LIGHTS (re-reference from tractor.usdc) ===================
+    def Xform "lights"
+    {
+        def Xform "Light"     (prepend references = @./tractor.usdc@</root/Light>)     {}
+        def Xform "env_light" (prepend references = @./tractor.usdc@</root/env_light>) {}
+    }
+
+    # =================== JOINTS ===================
+    # Must live INSIDE the defaultPrim subtree — the loader walks
+    # `defaultPrim` + root-level PhysicsScene/CollisionGroup only, so
+    # joints authored as siblings of `/robot` get silently skipped.
+    def Scope "Joints"
+{
+    # ---- REAR (chassis ↔ wheel, axle X) ----
+    def PhysicsRevoluteJoint "rev_back_left"
+    {
+        rel physics:body0 = </robot/chassis>
+        rel physics:body1 = </robot/wheel_back_left>
+        point3f physics:localPos0 = (0.8475, 1.14, 0.755)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "X"
+    }
+    def PhysicsRevoluteJoint "rev_back_right"
+    {
+        rel physics:body0 = </robot/chassis>
+        rel physics:body1 = </robot/wheel_back_right>
+        point3f physics:localPos0 = (-0.8375, 1.14, 0.755)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "X"
+    }
+
+    # ---- FRONT-LEFT: chassis ↔ steer (Z, ±45°) ; steer ↔ wheel (X, free) ----
+    # `excludeFromArticulation = true` keeps these out of the chassis
+    # multibody so Rapier 0.31's articulation solver doesn't hit its
+    # 7-body topology bug (`multibody.rs:1213` index out of bounds).
+    # They fall back to `ImpulseJoint` — still a native typed
+    # RevoluteJoint, just solved as a soft constraint.
+    def PhysicsRevoluteJoint "steer_front_left"
+    {
+        rel physics:body0 = </robot/chassis>
+        rel physics:body1 = </robot/steer_front_left>
+        point3f physics:localPos0 = (0.79, -1.23, 0.525)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "Z"
+        float physics:lowerLimit = -45.0
+        float physics:upperLimit = 45.0
+
+    }
+    def PhysicsRevoluteJoint "rev_front_left"
+    {
+        rel physics:body0 = </robot/steer_front_left>
+        rel physics:body1 = </robot/wheel_front_left>
+        point3f physics:localPos0 = (0, 0, 0)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "X"
+
+    }
+
+    # ---- FRONT-RIGHT (independent of left; controller handles Ackermann) ----
+    def PhysicsRevoluteJoint "steer_front_right"
+    {
+        rel physics:body0 = </robot/chassis>
+        rel physics:body1 = </robot/steer_front_right>
+        point3f physics:localPos0 = (-0.7775, -1.23, 0.525)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "Z"
+        float physics:lowerLimit = -45.0
+        float physics:upperLimit = 45.0
+
+    }
+    def PhysicsRevoluteJoint "rev_front_right"
+    {
+        rel physics:body0 = </robot/steer_front_right>
+        rel physics:body1 = </robot/wheel_front_right>
+        point3f physics:localPos0 = (0, 0, 0)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+        uniform token physics:axis = "X"
+
+    }
+}
+}
+
+def PhysicsScene "PhysicsScene"
+{
+    vector3f physics:gravityDirection = (0, 0, -1)
+    float physics:gravityMagnitude = 9.81
+}

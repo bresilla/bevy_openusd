@@ -1,36 +1,41 @@
 //! Rapier physics adapter for [`bevy_openusd`].
 //!
-//! [`bevy_openusd`] reads USD files and projects them into ECS as a
-//! tree of entities carrying backend-neutral marker components
-//! (`UsdRigidBody`, `UsdMass`, `UsdCollider`, `UsdPhysicsJoint`,
-//! `UsdArticulationRoot`, `UsdPhysicsScene`, `UsdPhysicsMaterial`).
-//! This crate adds [`RapierAdapterPlugin`], which translates those
-//! markers 1:1 into the corresponding [`bevy_rapier3d`] components so
-//! the scene actually simulates.
+//! Owns its own Rapier f64 world (`PhysicsWorld` resource) and steps
+//! it from a Bevy system. Translates the projection's backend-neutral
+//! marker components (`UsdRigidBody`, `UsdMass`, `UsdCollider`,
+//! `UsdPhysicsJoint`, `UsdArticulationRoot`, `UsdPhysicsScene`,
+//! `UsdPhysicsMaterial`) into Rapier `RigidBodySet` / `ColliderSet` /
+//! `MultibodyJointSet` / `ImpulseJointSet` entries. Pose writeback
+//! into Bevy `Transform` runs in `PostUpdate`.
+//!
+//! No `bevy_rapier3d` dependency. This crate wraps `rapier3d-f64`
+//! directly so precision matches gearbox / other f64 robotics
+//! pipelines and there's no Bevy-Component coupling on the physics
+//! state.
 //!
 //! # Conventions inherited from `bevy_openusd`
 //!
 //! - All values are SI (m, kg, m/s, rad/s) — `bevy_openusd` applied
 //!   `metersPerUnit` / `kilogramsPerUnit` / degree→radian conversions
 //!   at the read→marker boundary.
-//! - Quaternions are Bevy-native `Quat::from_xyzw` order.
+//! - Quaternions are Bevy-native `Quat::from_xyzw` order. Conversions
+//!   to nalgebra at the Rapier boundary live in `convert.rs`.
 //! - `lower > upper` on any limit means a locked DOF.
 //!
-//! # Routing rules this adapter follows
+//! # Routing rules
 //!
-//! - [`UsdPhysicsScene`]: first one seen sets [`RapierConfiguration::gravity`].
+//! - [`UsdPhysicsScene`]: first one seen sets `PhysicsWorld.gravity`.
 //! - [`UsdRigidBody`]: kinematic bodies become
-//!   `RigidBody::KinematicPositionBased`, otherwise `RigidBody::Dynamic`.
-//!   Mass priority follows USD: explicit `mass` → `density` → engine default.
-//! - [`UsdCollider`]: primitive shapes use Rapier's native constructors;
-//!   mesh colliders honour the `MeshCollisionAPI` approximation token,
-//!   with the fallback table from the project's PLAN.md (trimesh for
-//!   static bodies, convex hull for dynamic when authored as `none`).
-//! - [`UsdPhysicsJoint`]: joints inside a [`UsdArticulationRoot`]
-//!   subtree become `MultibodyJoint` (reduced-coordinate, stable for
-//!   long chains). Joints with `exclude_from_articulation` or those
-//!   that would close a loop fall back to `ImpulseJoint`. Joints
-//!   outside any articulation are always `ImpulseJoint`.
+//!   `RigidBodyType::KinematicPositionBased`, otherwise `Dynamic`.
+//!   Mass priority: explicit `mass` → `density` → tiny safety mass.
+//! - [`UsdCollider`]: primitive shapes via Rapier's native builders;
+//!   mesh colliders honour the `MeshCollisionAPI` approximation token.
+//! - [`UsdPhysicsJoint`]: joints in a scene with any
+//!   [`UsdArticulationRoot`] become `MultibodyJoint` (Featherstone)
+//!   unless flagged `excludeFromArticulation`. Otherwise `ImpulseJoint`.
+//!   Same-basis revolute/prismatic joints use the native typed
+//!   builder; differing-basis chains fall back to Generic-D6 with full
+//!   per-body bases.
 //!
 //! # Usage
 //!
@@ -38,43 +43,52 @@
 //! use bevy::prelude::*;
 //! use bevy_openusd::UsdPlugin;
 //! use bevy_openusd_rapier::RapierAdapterPlugin;
-//! use bevy_rapier3d::prelude::*;
 //!
 //! App::new()
 //!     .add_plugins(DefaultPlugins)
 //!     .add_plugins(UsdPlugin)
-//!     .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
 //!     .add_plugins(RapierAdapterPlugin)
 //!     .run();
 //! ```
 
 mod bodies;
 mod colliders;
+mod convert;
+mod debug;
 mod joints;
 mod scene;
+mod world;
+mod writeback;
+
+pub use debug::ColliderDebugEnabled;
+pub use world::{PhysicsActive, PhysicsWorld};
 
 use bevy::prelude::*;
 
-/// Wires every USD physics marker → Rapier component conversion
-/// system. Run after `RapierPhysicsPlugin` so its resources exist.
+/// Wires the Rapier f64 world + every USD-marker → Rapier conversion
+/// system + the writeback path. Adds `PhysicsWorld`, `PhysicsActive`,
+/// and `ColliderDebugEnabled` resources.
 pub struct RapierAdapterPlugin;
 
 impl Plugin for RapierAdapterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                scene::sync_gravity_from_usd_scene,
-                scene::raise_scaled_shape_subdivision,
-                bodies::convert_rigid_bodies,
-                colliders::convert_colliders,
-                colliders::apply_physics_materials,
-                // Runs after rigid-body conversion so world-anchored
-                // Fixed joints can override the body's RigidBody enum
-                // to ::Fixed (Isaac Sim convention pins the base of
-                // an articulation that way).
-                joints::convert_joints.after(bodies::convert_rigid_bodies),
-            ),
-        );
+        app.init_resource::<PhysicsWorld>()
+            .init_resource::<PhysicsActive>()
+            .init_resource::<ColliderDebugEnabled>()
+            .add_systems(
+                Update,
+                (
+                    scene::sync_gravity_from_usd_scene,
+                    bodies::convert_rigid_bodies,
+                    colliders::convert_colliders.after(bodies::convert_rigid_bodies),
+                    colliders::apply_physics_materials.after(colliders::convert_colliders),
+                    joints::convert_joints.after(bodies::convert_rigid_bodies),
+                    world::step_physics
+                        .after(joints::convert_joints)
+                        .after(colliders::convert_colliders),
+                ),
+            )
+            .add_systems(PostUpdate, writeback::writeback_transforms)
+            .add_systems(Last, debug::draw_collider_gizmos);
     }
 }

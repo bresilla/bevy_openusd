@@ -249,7 +249,7 @@ fn draw_ribbons(
     mut open: ResMut<RibbonOpen>,
     mut placement: ResMut<RibbonPlacement>,
     mut drag: ResMut<RibbonDrag>,
-    mut physics: ResMut<crate::PhysicsActive>,
+    mut physics: ResMut<bevy_openusd_rapier::PhysicsActive>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else {
         return;

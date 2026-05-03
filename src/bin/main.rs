@@ -111,22 +111,19 @@ fn main() {
     .add_plugins(OverlaysPlugin)
     .add_plugins(crate::physics_overlay::PhysicsOverlayPlugin);
 
-    // Rapier + the USD physics adapter are always wired so the play
-    // button on the ribbon can flip simulation on at runtime. Initial
-    // run state defaults OFF; `BEVY_OPENUSD_PHYSICS=1` makes it start
-    // playing immediately.
+    // The USD physics adapter owns its own Rapier f64 world via
+    // `RapierAdapterPlugin`. The play button on the ribbon flips
+    // `PhysicsActive` to start/stop the sim. Default OFF;
+    // `BEVY_OPENUSD_PHYSICS=1` makes it start playing immediately.
     let physics_initially_active = std::env::var("BEVY_OPENUSD_PHYSICS")
         .ok()
         .map(|v| matches!(v.as_str(), "1" | "true" | "on"))
         .unwrap_or(false);
-    app.insert_resource(PhysicsActive(physics_initially_active))
-        .add_plugins(bevy_rapier3d::plugin::RapierPhysicsPlugin::<bevy_rapier3d::plugin::NoUserData>::default())
-        .add_plugins(bevy_rapier3d::render::RapierDebugRenderPlugin::default())
-        .add_plugins(bevy_openusd_rapier::RapierAdapterPlugin)
+    app.add_plugins(bevy_openusd_rapier::RapierAdapterPlugin)
+        .insert_resource(bevy_openusd_rapier::PhysicsActive(physics_initially_active))
         .add_systems(Startup, spawn_physics_ground)
         .add_systems(Update, lift_scene_off_ground)
-        .add_systems(Update, sync_collider_debug_visibility)
-        .add_systems(Update, sync_physics_active);
+        .add_systems(Update, sync_collider_debug_visibility);
 
     app
     .init_resource::<Spawned>()
@@ -343,54 +340,29 @@ fn sync_ground_grid_visibility(
     }
 }
 
-/// Wire `DisplayToggles.show_colliders` (Overlays panel + hotkey) to
-/// bevy_rapier's debug-render context. Wraps with `Option<ResMut>` so
-/// we don't panic if the rapier render plugin is missing (physics off).
+/// Wire `DisplayToggles.show_colliders` to the adapter's gizmo
+/// renderer (`ColliderDebugEnabled` resource).
 fn sync_collider_debug_visibility(
     toggles: Res<crate::overlays::DisplayToggles>,
-    debug: Option<ResMut<bevy_rapier3d::render::DebugRenderContext>>,
+    mut enabled: ResMut<bevy_openusd_rapier::ColliderDebugEnabled>,
 ) {
-    if let Some(mut debug) = debug {
-        if debug.enabled != toggles.show_colliders {
-            debug.enabled = toggles.show_colliders;
-        }
+    if enabled.0 != toggles.show_colliders {
+        enabled.0 = toggles.show_colliders;
     }
 }
 
-/// Run-state for the Rapier simulation. The play button on the ribbon
-/// flips this; `sync_physics_active` mirrors it into every
-/// `RapierConfiguration` so the pipeline starts and stops on demand.
-#[derive(Resource, Clone, Copy, Debug)]
-pub struct PhysicsActive(pub bool);
-
-fn sync_physics_active(
-    active: Res<PhysicsActive>,
-    mut configs: Query<&mut bevy_rapier3d::plugin::RapierConfiguration>,
-) {
-    for mut cfg in &mut configs {
-        if cfg.physics_pipeline_active != active.0 {
-            cfg.physics_pipeline_active = active.0;
-        }
-    }
-}
-
-fn spawn_physics_ground(mut commands: Commands) {
-    use bevy_rapier3d::geometry::Collider;
-    use bevy_rapier3d::render::ColliderDebug;
-    // Invisible static ground — just collision geometry. The visual
-    // "floor" comes from glacial's `GroundGridPlugin` which renders
-    // an LOD grid that fades to infinity against the dark
-    // ClearColor, no solid plane needed. `ColliderDebug::NeverRender`
-    // keeps Rapier's debug renderer from drawing this giant 100×100 m
-    // box around the whole scene when the user toggles
-    // collider-wireframe view on.
-    commands.spawn((
-        Name::new("PhysicsGround"),
-        Transform::from_xyz(0.0, -0.5, 0.0),
-        Visibility::Hidden,
-        Collider::cuboid(50.0, 0.5, 50.0),
-        ColliderDebug::NeverRender,
-    ));
+/// Static ground for the loaded scene — a cuboid in the adapter's
+/// PhysicsWorld. Built directly into Rapier (not as a Bevy entity)
+/// since it needs no Transform writeback. The visual floor comes
+/// from glacial's `GroundGridPlugin` rendering an infinite-fade grid.
+fn spawn_physics_ground(mut world: ResMut<bevy_openusd_rapier::PhysicsWorld>) {
+    use bevy::math::DVec3;
+    use rapier3d_f64::prelude::*;
+    let ground = ColliderBuilder::cuboid(50.0, 0.5, 50.0)
+        .translation(DVec3::new(0.0, -0.5, 0.0))
+        .friction(1.0)
+        .build();
+    world.colliders.insert(ground);
 }
 
 fn spawn_camera_and_ground(mut commands: Commands) {

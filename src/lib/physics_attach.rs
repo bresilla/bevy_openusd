@@ -129,7 +129,14 @@ pub fn attach_physics_to_prim(
             .gravity_direction
             .map(|d| meta.basis_rotation * Vec3::from_array(d))
             .unwrap_or(Vec3::NEG_Y);
-        let mag = scene.gravity_magnitude.unwrap_or(9.81) * meta.meters_per_unit;
+        // Per UsdPhysicsScene spec, `physics:gravityMagnitude` is in
+        // scene units / s². But virtually every authored scene writes
+        // `9.81` meaning Earth gravity in m/s² regardless of
+        // `metersPerUnit`. Multiplying by metersPerUnit on a
+        // `metersPerUnit=0.01` scene (Scout V2, Isaac Sim assets)
+        // turns 9.81 into 0.0981 m/s² and the whole sim falls in
+        // slow-motion. Treat the authored value as already in m/s².
+        let mag = scene.gravity_magnitude.unwrap_or(9.81);
         world.entity_mut(entity).insert(UsdPhysicsScene {
             gravity_direction: dir.normalize_or_zero(),
             gravity_magnitude: mag,
@@ -519,10 +526,46 @@ fn collider_shape_from_prim(stage: &Stage, path: &Path, _meta: &StageMeta) -> Us
         }
         "Mesh" => UsdColliderShape::Mesh,
         "Plane" => UsdColliderShape::Plane,
-        // Unknown geom type with CollisionAPI applied — fall through
-        // to a unit cube to avoid a missing-shape adapter crash.
-        _ => UsdColliderShape::Cube { size: 1.0 },
+        // Unknown geom type with CollisionAPI applied. Vendor USDs
+        // (Agilebot, Carter) commonly put `PhysicsCollisionAPI` on an
+        // Xform/Scope whose Mesh is a child rather than on the Mesh
+        // itself. Look for any Mesh in the descendant subtree and
+        // treat as a mesh collider in that case; only fall back to a
+        // unit cube if the prim subtree truly has no geometry.
+        _ => {
+            if has_mesh_descendant(stage, path) {
+                UsdColliderShape::Mesh
+            } else {
+                UsdColliderShape::Cube { size: 1.0 }
+            }
+        }
     }
+}
+
+/// Walk the prim subtree looking for any `def Mesh` prim. Used by
+/// `collider_shape_from_prim` to recognise Xform-with-CollisionAPI as
+/// a mesh collider when the actual geometry sits one level deeper.
+fn has_mesh_descendant(stage: &Stage, root: &Path) -> bool {
+    let Ok(children) = stage.prim_children(root.clone()) else {
+        return false;
+    };
+    for child_name in children {
+        let Ok(child_path) = root.append_path(child_name.as_str()) else {
+            continue;
+        };
+        let type_name = stage
+            .field::<String>(child_path.clone(), "typeName")
+            .ok()
+            .flatten()
+            .unwrap_or_default();
+        if type_name == "Mesh" {
+            return true;
+        }
+        if has_mesh_descendant(stage, &child_path) {
+            return true;
+        }
+    }
+    false
 }
 
 fn capsule_axis(stage: &Stage, path: &Path) -> Vec3 {

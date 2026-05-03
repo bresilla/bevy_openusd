@@ -3,7 +3,7 @@ name = "bevy_openusd_rapier"
 version = "0.0.1"
 edition = "2024"
 license = "MIT"
-description = "Rapier physics adapter for bevy_openusd — translates the projection's backend-neutral marker components into bevy_rapier3d RigidBody / Collider / ImpulseJoint / MultibodyJoint."
+description = "Rapier physics adapter for bevy_openusd — translates backend-neutral USD physics markers into a self-owned Rapier f64 world that Bevy renders."
 repository = "https://github.com/bresilla/bevy_openusd"
 
 [dependencies]
@@ -12,8 +12,16 @@ repository = "https://github.com/bresilla/bevy_openusd"
 # loader can in turn depend on this adapter for its viewer binary
 # without forming a dependency cycle.
 usd_physics_markers = { path = "../usd_physics_markers" }
-# Backend physics engine.
-bevy_rapier3d = "0.33"
+# Backend physics engine — bare Rapier (f64), NOT bevy_rapier3d. We
+# own the world (`PhysicsWorld` resource), step it ourselves, and
+# write rigid-body poses back to Bevy `Transform` after each step.
+# The f64 variant matches the precision robotics pipelines (gearbox)
+# already use, so types cross sim ↔ renderer boundaries without
+# precision loss.
+rapier3d-f64 = "0.32"
+# Vector / quaternion types Rapier uses internally. Bevy uses glam —
+# we convert at the boundary.
+nalgebra = { version = "0.34", features = ["convert-glam030"] }
 bevy = { version = "0.18", default-features = false, features = [
     "std",
     "async_executor",
@@ -24,6 +32,8 @@ bevy = { version = "0.18", default-features = false, features = [
     "bevy_render",
     "bevy_pbr",
     "bevy_scene",
+    "bevy_gizmos",
+    "bevy_gizmos_render",
     "reflect_auto_register",
 ] }
 
@@ -31,3 +41,4 @@ bevy = { version = "0.18", default-features = false, features = [
 # Examples need the loader (UsdAsset / UsdPlugin); dev-deps don't
 # create a build-time cycle with the lib's runtime deps.
 bevy_openusd = { path = "../.." }
+

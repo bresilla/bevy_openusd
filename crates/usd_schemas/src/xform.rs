@@ -156,6 +156,9 @@ pub fn read_transform(stage: &openusd::Stage, prim: &Path) -> Result<Option<Tran
     };
     let order: Vec<String> = match raw {
         Value::TokenVec(v) | Value::StringVec(v) => v,
+        // URDF→USD exports (Agilex Scout V2, Isaac Sim assets) author
+        // `xformOpOrder` as a list-op rather than a plain vec.
+        Value::TokenListOp(op) => op.flatten(),
         _ => return Ok(None),
     };
 
