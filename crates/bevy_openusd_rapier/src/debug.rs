@@ -14,7 +14,7 @@ pub struct ColliderDebugEnabled(pub bool);
 
 impl Default for ColliderDebugEnabled {
     fn default() -> Self {
-        Self(true)
+        Self(false)
     }
 }
 

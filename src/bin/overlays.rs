@@ -154,7 +154,7 @@ impl Default for DisplayToggles {
             show_skeleton: false,
             show_physics: false,
             wireframe: false,
-            show_colliders: true,
+            show_colliders: false,
             light_intensity_scale: 1.0,
         }
     }

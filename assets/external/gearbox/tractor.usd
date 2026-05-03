@@ -30,6 +30,18 @@ def Xform "robot" (
     prepend apiSchemas = ["PhysicsArticulationRootAPI"]
 )
 {
+
+    # Pull in tractor.usdc's authored materials so mesh `material:binding`
+    # references resolve in our wrapper namespace. Each mesh override
+    # below rewrites the source binding (`/root/_materials/Material_X`)
+    # to the wrapper-namespace path (`/robot/_materials/Material_X`) so
+    # Pixar/Isaac don't drop the binding as out-of-reference-scope.
+    def Scope "_materials" (
+        prepend references = @./tractor.usdc@</root/_materials>
+    )
+    {
+    }
+
     def Scope "Materials"
     {
         def Material "rim_red"
@@ -62,71 +74,131 @@ def Xform "robot" (
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh0_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh0_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_006>
+
+            }
         }
         def Xform "m1"  (prepend references = @./tractor.usdc@</root/mesh1_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh1_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh1_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_006>
+
+            }
         }
         def Xform "m2"  (prepend references = @./tractor.usdc@</root/mesh2_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh2_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh2_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_006>
+
+            }
         }
         def Xform "m3"  (prepend references = @./tractor.usdc@</root/mesh3_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh3_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh3_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_002>
+
+            }
         }
         def Xform "m4"  (prepend references = @./tractor.usdc@</root/mesh4_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh4_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh4_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_004>
+
+            }
         }
         def Xform "m5"  (prepend references = @./tractor.usdc@</root/mesh5_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh5_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh5_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_006>
+
+            }
         }
         def Xform "m6"  (prepend references = @./tractor.usdc@</root/mesh6_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh6_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh6_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_003>
+
+            }
         }
         def Xform "m7"  (prepend references = @./tractor.usdc@</root/mesh7_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh7_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh7_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_001>
+
+            }
         }
         def Xform "m8"  (prepend references = @./tractor.usdc@</root/mesh8_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh8_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh8_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_004>
+
+            }
         }
         def Xform "m9"  (prepend references = @./tractor.usdc@</root/mesh9_dat_>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh9_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh9_dat_" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_001>
+
+            }
         }
         def Xform "m10" (prepend references = @./tractor.usdc@</root/mesh10_dat>)
         {
@@ -142,50 +214,92 @@ def Xform "robot" (
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh11_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh11_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_003>
+
+            }
         }
         def Xform "m12" (prepend references = @./tractor.usdc@</root/mesh12_dat>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh12_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh12_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_006>
+
+            }
         }
         def Xform "m13" (prepend references = @./tractor.usdc@</root/mesh13_dat>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh13_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh13_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_006>
+
+            }
         }
         def Xform "m14" (prepend references = @./tractor.usdc@</root/mesh14_dat>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh14_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh14_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_002>
+
+            }
         }
         def Xform "m15" (prepend references = @./tractor.usdc@</root/mesh15_dat>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh15_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh15_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_003>
+
+            }
         }
         def Xform "m16" (prepend references = @./tractor.usdc@</root/mesh16_dat>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh16_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh16_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_007>
+
+            }
         }
         def Xform "m19" (prepend references = @./tractor.usdc@</root/mesh19_dat>)
         {
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:scale"]
-            over "mesh19_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
-            { uniform token physics:approximation = "convexHull" }
+            over "mesh19_dat" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
+            {
+                uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_006>
+
+            }
         }
     }
 
@@ -205,9 +319,13 @@ def Xform "robot" (
             double3 xformOp:translate = (0.8375, -1.14, -0.755)
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-            over "sub01_005" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            over "sub01_005" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
             {
                 uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_004>
+
             }
         }
         def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_back_left_rim>)
@@ -235,9 +353,13 @@ def Xform "robot" (
             double3 xformOp:translate = (0.8375, -1.14, -0.755)
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-            over "sub01_006" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            over "sub01_006" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
             {
                 uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_004>
+
             }
         }
         def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_back_right_rim>)
@@ -289,9 +411,13 @@ def Xform "robot" (
             double3 xformOp:translate = (-0.79, 1.23, -0.525)
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-            over "sub01_004" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            over "sub01_004" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
             {
                 uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_004>
+
             }
         }
         def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_front_left_rim>)
@@ -319,9 +445,13 @@ def Xform "robot" (
             double3 xformOp:translate = (0.7775, 1.23, -0.525)
             float3 xformOp:scale = (0.25, 0.25, 0.25)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-            over "sub01_003" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"])
+            over "sub01_003" (prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"])
+
             {
                 uniform token physics:approximation = "convexHull"
+
+                rel material:binding = </robot/_materials/Material_004>
+
             }
         }
         def Xform "rim" (prepend references = @./tractor.usdc@</root/wheel_front_right_rim>)
