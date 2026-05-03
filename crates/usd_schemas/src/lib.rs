@@ -31,7 +31,6 @@ pub mod geom;
 pub mod lux;
 pub mod math;
 pub mod media;
-pub mod physics;
 pub mod proc;
 pub mod render;
 pub mod shade;

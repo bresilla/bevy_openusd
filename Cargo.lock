@@ -4067,7 +4067,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 [[package]]
 name = "openusd"
 version = "0.3.0"
-source = "git+https://github.com/bresilla/openusd?branch=cocktail#36511482f157fbddd667f0ffd0961b578cf25687"
+source = "git+https://github.com/mxpv/openusd?branch=main#fe92b73224c611831be244afac9cf7654b5ef51e"
 dependencies = [
  "anyhow",
  "bytemuck",

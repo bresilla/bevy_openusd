@@ -19,7 +19,7 @@ use openusd::Stage;
 use openusd::sdf::{Path, Value};
 
 use usd_physics_markers::*;
-use usd_schemas::physics as ph;
+use openusd::physics as ph;
 
 /// Stage-level conversion factors. Read once at the start of
 /// `stage_to_scene` and threaded through every per-prim attachment.
@@ -144,7 +144,7 @@ pub fn attach_physics_to_prim(
     }
 
     // Most other schemas piggyback on apiSchemas — read once.
-    let api_schemas = ph::read_api_schemas(stage, path).unwrap_or_default();
+    let api_schemas = stage.api_schemas(path).unwrap_or_default();
 
     // RigidBodyAPI
     if api_schemas.iter().any(|s| s == "PhysicsRigidBodyAPI") {

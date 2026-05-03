@@ -102,7 +102,7 @@ pub struct UsdAsset {
     pub physics_scene_prims: Vec<String>,
     /// Decoded `Physics*Joint` prims. Authored frames + limits already
     /// resolved — downstream physics backends can consume directly.
-    pub joints: Vec<usd_schemas::physics::ReadJoint>,
+    pub joints: Vec<openusd::physics::ReadJoint>,
     /// `PhysicsArticulationRootAPI` prim paths (Phase 3).
     pub articulation_root_prims: Vec<String>,
     /// Prim paths bearing `PhysicsMaterialAPI` (typically `Material` prims).
@@ -1025,7 +1025,7 @@ fn collect_custom_attrs(
 struct PhysicsSummary {
     rigid_body_prims: Vec<String>,
     physics_scene_prims: Vec<String>,
-    joints: Vec<usd_schemas::physics::ReadJoint>,
+    joints: Vec<openusd::physics::ReadJoint>,
     articulation_root_prims: Vec<String>,
     physics_material_prims: Vec<String>,
     collision_group_prims: Vec<String>,
@@ -1038,7 +1038,7 @@ struct PhysicsSummary {
 /// `UsdAsset` summary lists for the viewer info panel; the actual ECS
 /// projection happens in `physics_attach::attach_physics_to_prim`.
 fn collect_physics(stage: &openusd::Stage) -> PhysicsSummary {
-    use usd_schemas::physics as ph;
+    use openusd::physics as ph;
     let prims = ph::find_physics_prims(stage).unwrap_or_default();
 
     let mut joints = Vec::with_capacity(prims.joints.len());

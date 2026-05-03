@@ -7,13 +7,6 @@ resolver = "2"
 members = ["crates/usd_schemas", "crates/usd_physics_markers", "crates/bevy_openusd_rapier"]
 exclude = ["xtra"]
 
-# `cocktail` branch on bresilla/openusd: rolling integration of all
-# in-flight patches (find_layer relative refs, quat byte-order, …)
-# until each lands upstream. Local checkout still lives in
-# `xtra/openusd-rs` for editing; Cargo consumes the pushed branch.
-[patch."https://github.com/mxpv/openusd"]
-openusd = { git = "https://github.com/bresilla/openusd", branch = "cocktail" }
-
 [package]
 name = "bevy_openusd"
 version = "0.0.1"
@@ -42,7 +35,7 @@ path = "src/bin/main.rs"
 [dependencies]
 # Spec-level USD reader (composition, layers, sdf). The plugin keeps a live
 # composed Stage as source of truth and projects into ECS.
-openusd = { git = "https://github.com/mxpv/openusd", branch = "main" }
+openusd = { git = "https://github.com/mxpv/openusd", branch = "main", features = ["physics"] }
 
 # Schema layer on top of `openusd`. Lives as a workspace sibling so it can
 # be published / upstreamed independently once the reader helpers stabilise.

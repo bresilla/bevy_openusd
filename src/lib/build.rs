@@ -1900,7 +1900,7 @@ fn is_root_physics_prim(stage: &Stage, prim: &Path) -> bool {
     if type_name.starts_with("Physics") {
         return true;
     }
-    let api = usd_schemas::physics::read_api_schemas(stage, prim).unwrap_or_default();
+    let api = stage.api_schemas(prim).unwrap_or_default();
     api.iter().any(|s| s.starts_with("Physics"))
 }
 
