@@ -5,6 +5,7 @@
 //! - the marker components (`markers::*` — internal module),
 //! - the Rapier physics adapter (`physics::*` — wraps `usd_rapier`).
 
+pub mod anim;
 mod asset;
 mod build;
 pub mod curves;
