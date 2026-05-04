@@ -10,6 +10,6 @@ categories = ["graphics", "rendering::data-formats"]
 
 [dependencies]
 # Spec-level (Sdf) reader/writer. We provide the schema layer on top.
-openusd = { git = "https://github.com/mxpv/openusd", branch = "main" }
+openusd = { git = "https://github.com/mxpv/openusd", rev = "fe92b73224c611831be244afac9cf7654b5ef51e" }
 anyhow = "1"
 glam = "0.30"

@@ -7,7 +7,7 @@ description = "Pure-Rust UsdPhysics → rapier3d-f64 conversion. No Bevy. Consum
 repository = "https://github.com/bresilla/bevy_openusd"
 
 [dependencies]
-openusd = { git = "https://github.com/mxpv/openusd", branch = "main", features = ["physics"] }
+openusd = { git = "https://github.com/mxpv/openusd", rev = "fe92b73224c611831be244afac9cf7654b5ef51e", features = ["physics"] }
 rapier3d-f64 = "0.32"
 glam = "0.30"
 anyhow = "1"

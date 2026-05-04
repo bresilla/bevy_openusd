@@ -7,7 +7,7 @@ description = "Bevy plugin: USD asset loader, scene projection, and Rapier physi
 repository = "https://github.com/bresilla/bevy_openusd"
 
 [dependencies]
-openusd = { git = "https://github.com/mxpv/openusd", branch = "main", features = ["physics"] }
+openusd = { git = "https://github.com/mxpv/openusd", rev = "fe92b73224c611831be244afac9cf7654b5ef51e", features = ["physics"] }
 usd_schema = { path = "../usd_schema" }
 usd_rapier = { path = "../usd_rapier" }
 rapier3d-f64 = "0.32"
