@@ -5,7 +5,7 @@
 
 use openusd::Stage;
 use openusd::sdf::{Path, SpecType, Value};
-use usd_schemas::physics as ph;
+use usd_schema::physics as ph;
 
 fn main() {
     let path = std::env::args().nth(1).unwrap_or_else(|| {
@@ -114,7 +114,7 @@ fn main() {
             .ok()
             .and_then(|a| stage.field::<Value>(a, "default").ok().flatten());
         // Try our actual reader
-        let computed = usd_schemas::xform::read_transform(&stage, &p).ok().flatten();
+        let computed = usd_schema::xform::read_transform(&stage, &p).ok().flatten();
         println!(
             "  {mp}\n    order = {order:?}\n    translate = {tr:?}\n    computed = {computed:?}"
         );
@@ -151,7 +151,7 @@ fn main() {
             .append_property("xformOp:orient")
             .ok()
             .and_then(|a| stage.field::<Value>(a, "default").ok().flatten());
-        let computed = usd_schemas::xform::read_transform(&stage, &p).ok().flatten();
+        let computed = usd_schema::xform::read_transform(&stage, &p).ok().flatten();
         println!("  {link}");
         println!("    order={order:?}");
         println!("    translate={tr:?}");

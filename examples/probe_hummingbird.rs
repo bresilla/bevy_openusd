@@ -13,7 +13,7 @@ fn main() {
     println!("=== SKELETON STRUCTURE ===");
     let skel_path = Path::new("/hummingbird_anim_hover_idle_long/hummingbird_rig/hummingbird_skinned_mesh/hummingbird_bind/root_1").unwrap();
     
-    if let Ok(Some(s)) = usd_schemas::skel::read_skeleton(&stage, &skel_path) {
+    if let Ok(Some(s)) = usd_schema::skel::read_skeleton(&stage, &skel_path) {
         println!("Skeleton at {}", skel_path.as_str());
         println!("  Joint count: {}", s.joints.len());
         println!("  Bind transforms: {}", s.bind_transforms.len());
@@ -43,7 +43,7 @@ fn main() {
             .unwrap_or_default();
         
         if tn == "Mesh" {
-            if let Ok(Some(b)) = usd_schemas::skel::read_skel_binding(stage, prim) {
+            if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(stage, prim) {
                 let max_idx = b.joint_indices.iter().max().copied().unwrap_or(0);
                 let min_idx = b.joint_indices.iter().min().copied().unwrap_or(0);
                 
@@ -179,7 +179,7 @@ fn main() {
 
     println!("\n=== SKEL ROOT REFERENCE ===");
     let skelroot = Path::new("/hummingbird_anim_hover_idle_long").unwrap();
-    if let Ok(Some(r)) = usd_schemas::skel::read_skel_root(&stage, &skelroot) {
+    if let Ok(Some(r)) = usd_schema::skel::read_skel_root(&stage, &skelroot) {
         println!("SkelRoot at {}", skelroot.as_str());
         println!("  skeleton: {:?}", r.skeleton);
         println!("  animation_source: {:?}", r.animation_source);

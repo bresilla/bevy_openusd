@@ -1,56 +1,38 @@
 [workspace]
 resolver = "2"
-# Only `usd_schemas` lives as a sibling crate — those reader helpers are
-# slated for upstreaming into openusd-rs. Everything else (the plugin lib
-# AND the viewer binary) lives in this root package so the project is one
-# `cargo run` away from end-to-end.
-members = ["crates/usd_schemas", "crates/usd_physics_markers", "crates/bevy_openusd_rapier"]
+members = [
+    "crates/usd_schema",
+    "crates/usd_rapier",
+    "crates/usd_bevy",
+]
 exclude = ["xtra"]
 
 [package]
-name = "bevy_openusd"
+name = "usdview"
 version = "0.0.1"
 edition = "2024"
 license = "MIT"
-description = "Bevy plugin that loads OpenUSD (.usda / .usdc / .usdz) as native Bevy scenes; ships an interactive viewer binary."
+description = "Interactive viewer for OpenUSD scenes — built on bevy + the usd_bevy plugin."
 repository = "https://github.com/bresilla/bevy_openusd"
-keywords = ["bevy", "usd", "openusd", "usdz", "asset"]
-categories = ["game-development", "graphics", "rendering::data-formats"]
 build = "build.rs"
-# Disable cargo's `src/bin/*.rs → one bin each` auto-discovery so the
-# viewer's sibling files (camera.rs, ui.rs, …) read as modules of
-# `main.rs` instead of being treated as their own binaries.
-autobins = false
-
-# Lib under `src/lib/`, viewer binary under `src/bin/`. Both are part of
-# the same root package — the lib is the published plugin, the bin is
-# the dogfood viewer that consumes it.
-[lib]
-path = "src/lib/lib.rs"
 
 [[bin]]
-name = "viewer"
-path = "src/bin/main.rs"
+name = "usdview"
+path = "src/main.rs"
 
 [dependencies]
-# Spec-level USD reader (composition, layers, sdf). The plugin keeps a live
-# composed Stage as source of truth and projects into ECS.
-openusd = { git = "https://github.com/mxpv/openusd", branch = "main", features = ["physics"] }
+# The Bevy USD plugin: asset loader, scene projection, marker
+# components, Rapier physics adapter. Single dep brings in everything
+# needed to load a USD into a Bevy app.
+usd_bevy = { path = "crates/usd_bevy" }
+# Pure-Rust USD readers/writers — the viewer reads camera projection
+# and anim track data directly off the loaded `Stage` without going
+# through Bevy components.
+usd_schema = { path = "crates/usd_schema" }
+# Direct Rapier dep for the viewer's static-ground collider authoring;
+# `usd_bevy::physics::PhysicsWorld` exposes the Rapier sets we mutate.
+rapier3d-f64 = "0.32"
 
-# Schema layer on top of `openusd`. Lives as a workspace sibling so it can
-# be published / upstreamed independently once the reader helpers stabilise.
-usd_schemas = { path = "crates/usd_schemas" }
-
-# Backend-neutral marker components for UsdPhysics — shared contract
-# between this crate and engine adapters (bevy_openusd_rapier, etc.).
-# Lives in its own crate so adapters can depend on it without pulling
-# in the full loader.
-usd_physics_markers = { path = "crates/usd_physics_markers" }
-
-# `bevy` features cover both the lib (asset loader, scene projection) and
-# the viewer binary (windowing, gizmos, post-process). Cargo unifies feature
-# sets across the workspace so consumers see the union anyway; keeping it
-# in one place avoids drift.
 bevy = { version = "0.18", default-features = false, features = [
     "std",
     "async_executor",
@@ -70,15 +52,7 @@ bevy = { version = "0.18", default-features = false, features = [
     "bevy_scene",
     "bevy_gizmos",
     "bevy_gizmos_render",
-    # Registers the `Node3d::PostProcessing` render-graph node. Required
-    # by `bevy::pbr::wireframe::WireframePlugin` (wires its pass as
-    # `EndMainPass → Wireframe → PostProcessing`) and by any post-process
-    # effect stack we add later.
     "bevy_post_process",
-    # Gates blend-shape / MorphTargetImage rendering. Without it,
-    # `Mesh::set_morph_targets` is a no-op and `MeshMorphWeights` doesn't
-    # drive any vertex displacement. Required for UsdSkel blend-shape
-    # playback.
     "morph",
     "default_font",
     "tonemapping_luts",
@@ -94,44 +68,19 @@ bevy = { version = "0.18", default-features = false, features = [
     "zstd_rust",
     "x11",
     "reflect_auto_register",
-    # NOTE: `file_watcher` would wire automatic hot reload on disk
-    # change, but Bevy 0.18.1 pins `notify-debouncer-full ^0.6` which
-    # never shipped to crates.io. Re-enable once upstream upgrades.
 ] }
 
 anyhow = "1"
-# Used to composite separately-authored roughness + metallic PNGs into the
-# single packed RGBA texture Bevy's `StandardMaterial` consumes
-# (`metallic_roughness_texture`: G = roughness, B = metallic). USD's
-# `UsdPreviewSurface` lets each channel be an independent texture asset;
-# without composition we can only use one and the other gets silently
-# dropped.
-image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
-thiserror = "2"
-zip = { version = "8", default-features = false, features = ["deflate"] }
-# `AssetLoader::Settings` requires Serialize + Deserialize.
-serde = { version = "1", features = ["derive"] }
-
-# Viewer-only deps — kept here because the bin lives in this same package.
 # Native file-picker dialog for the "Browse USD…" button.
 rfd = "0.15"
-# Physics simulation — owns its Rapier f64 world internally and
-# exposes a Bevy plugin. The viewer binary just adds the plugin; the
-# bevy_openusd LIB stays physics-engine-agnostic. No bevy_rapier3d
-# dependency anywhere — bevy_openusd_rapier wraps raw rapier3d-f64.
-bevy_openusd_rapier = { path = "crates/bevy_openusd_rapier" }
-# Direct Rapier dep for the viewer's static-ground collider authoring;
-# the adapter re-exports its `PhysicsWorld` resource which we mutate.
-rapier3d-f64 = "0.32"
-# VS-Code-style egui chrome matching `bevy_urdf`'s viewer.
+# VS-Code-style egui chrome.
 bevy_egui = { version = "0.39", default-features = false, features = [
     "default_fonts",
     "render",
 ] }
 # Glass-themed editor UI kit (ribbons, floating panels, widgets, tokens).
 bevy_frost = { git = "https://github.com/bresilla/bevy_frost", branch = "develop", package = "bevy_frost" }
-# Reusable 3D-scene gizmos: axis triads + joint-shaped primitives
-# (revolute arc, prismatic segment, spherical cone, distance envelope).
+# Reusable 3D-scene gizmos (axis triads + joint primitives).
 bevy_glacial = { git = "https://github.com/bresilla/bevy_glacial", branch = "main" }
 
 # `build.rs` bakes a sample USDZ (USDA + procedural PNG) into
@@ -140,23 +89,3 @@ bevy_glacial = { git = "https://github.com/bresilla/bevy_glacial", branch = "mai
 [build-dependencies]
 zip = { version = "8", default-features = false, features = ["deflate"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
-
-# Tests drive the asset pipeline headless; they need Scene + Transform
-# plumbing to validate projection, but nothing more.
-[dev-dependencies]
-image = { version = "0.25", default-features = false, features = ["png"] }
-bevy = { version = "0.18", default-features = false, features = [
-    "std",
-    "async_executor",
-    "multi_threaded",
-    "bevy_asset",
-    "bevy_log",
-    "bevy_scene",
-    "bevy_render",
-    "bevy_pbr",
-    "bevy_mesh",
-    "bevy_image",
-    "png",
-    "ktx2",
-    "reflect_auto_register",
-] }

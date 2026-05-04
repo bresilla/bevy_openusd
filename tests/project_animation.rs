@@ -13,7 +13,7 @@ use bevy::pbr::MeshMaterial3d;
 use bevy::prelude::*;
 use bevy::scene::{Scene, SceneRoot};
 use bevy_openusd::{UsdAsset, UsdPlugin};
-use usd_schemas::anim::sample_scalar_concrete;
+use usd_schema::anim::sample_scalar_concrete;
 
 fn build_test_app() -> App {
     let mut app = App::new();

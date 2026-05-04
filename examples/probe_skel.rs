@@ -18,7 +18,7 @@ fn main() {
             .flatten()
             .unwrap_or_default();
         if tn == "Skeleton" {
-            if let Ok(Some(s)) = usd_schemas::skel::read_skeleton(stage, prim) {
+            if let Ok(Some(s)) = usd_schema::skel::read_skeleton(stage, prim) {
                 println!(
                     "Skeleton {} joints={} bind={} rest={}",
                     prim.as_str(),
@@ -96,7 +96,7 @@ fn main() {
                 }
             }
         } else if tn == "SkelRoot" {
-            if let Ok(Some(r)) = usd_schemas::skel::read_skel_root(stage, prim) {
+            if let Ok(Some(r)) = usd_schema::skel::read_skel_root(stage, prim) {
                 println!(
                     "SkelRoot {} skel={:?} animSrc={:?}",
                     prim.as_str(),
@@ -132,9 +132,9 @@ fn main() {
     fn walk_skin(stage: &openusd::Stage, prim: &Path, count_skinned: &mut usize, count_with_subsets: &mut usize) {
         let tn: String = stage.field::<String>(prim.clone(), "typeName").ok().flatten().unwrap_or_default();
         if tn == "Mesh" {
-            if let Ok(Some(b)) = usd_schemas::skel::read_skel_binding(stage, prim) {
+            if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(stage, prim) {
                 *count_skinned += 1;
-                let mesh_data = usd_schemas::geom::read_mesh(stage, prim).ok().flatten();
+                let mesh_data = usd_schema::geom::read_mesh(stage, prim).ok().flatten();
                 let subset_count = mesh_data.as_ref().map(|m| m.subsets.len()).unwrap_or(0);
                 let pt_count = mesh_data.as_ref().map(|m| m.points.len()).unwrap_or(0);
                 if subset_count > 0 {
@@ -194,7 +194,7 @@ fn main() {
     let walk_path =
         "assets/UsdSkelExamples/HumanFemale/HumanFemale.walk.usd";
     if let Ok(walk_text) = std::fs::read_to_string(walk_path) {
-        let anims = usd_schemas::skel_anim_text::scan_skel_animations(&walk_text);
+        let anims = usd_schema::skel_anim_text::scan_skel_animations(&walk_text);
         if let Some(anim) = anims.first() {
             // Find Hips in both anim and skeleton.
             let anim_hips = anim.joints.iter().position(|j| j == "Hips");
@@ -203,14 +203,14 @@ fn main() {
             fn find_skel(
                 stage: &openusd::Stage,
                 p: &openusd::sdf::Path,
-            ) -> Option<usd_schemas::skel::ReadSkeleton> {
+            ) -> Option<usd_schema::skel::ReadSkeleton> {
                 let tn = stage
                     .field::<String>(p.clone(), "typeName")
                     .ok()
                     .flatten()
                     .unwrap_or_default();
                 if tn == "Skeleton" {
-                    return usd_schemas::skel::read_skeleton(stage, p).ok().flatten();
+                    return usd_schema::skel::read_skeleton(stage, p).ok().flatten();
                 }
                 for c in stage.prim_children(p.clone()).unwrap_or_default() {
                     if let Ok(cp) = p.append_path(c.as_str()) {
@@ -266,7 +266,7 @@ fn main() {
     println!();
     println!("== anim-order joint lookup ==");
     if let Ok(walk_text) = std::fs::read_to_string("assets/UsdSkelExamples/HumanFemale/HumanFemale.walk.usd") {
-        let anims = usd_schemas::skel_anim_text::scan_skel_animations(&walk_text);
+        let anims = usd_schema::skel_anim_text::scan_skel_animations(&walk_text);
         if let Some(a) = anims.first() {
             println!("anim joint count: {}", a.joints.len());
             for ix in [55, 56, 57, 58, 59, 60, 100, 101, 102, 103, 104, 105, 106, 107, 108] {
@@ -288,14 +288,14 @@ fn main() {
             Ok(p) => p,
             Err(_) => continue,
         };
-        if let Ok(Some(b)) = usd_schemas::skel::read_skel_binding(&stage, &prim) {
+        if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(&stage, &prim) {
             let max_idx = b.joint_indices.iter().max().copied().unwrap_or(0);
             let min_idx = b.joint_indices.iter().min().copied().unwrap_or(0);
             // Distinct indices used.
             let mut distinct: std::collections::BTreeSet<i32> =
                 b.joint_indices.iter().copied().collect();
             let _ = distinct.split_off(&i32::MAX);
-            let m = usd_schemas::geom::read_mesh(&stage, &prim).ok().flatten();
+            let m = usd_schema::geom::read_mesh(&stage, &prim).ok().flatten();
             let mut center = [0.0; 3];
             if let Some(ref m) = m {
                 let mut mn = [f32::INFINITY; 3];
@@ -331,7 +331,7 @@ fn main() {
             Ok(p) => p,
             Err(_) => continue,
         };
-        if let Ok(Some(b)) = usd_schemas::skel::read_skel_binding(&stage, &prim) {
+        if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(&stage, &prim) {
             let mut idx_set: std::collections::BTreeSet<i32> =
                 b.joint_indices.iter().copied().collect();
             let summary: Vec<i32> = idx_set.iter().take(8).copied().collect();
@@ -417,7 +417,7 @@ fn main() {
     // Read ShoesHumanFlats's authored xform.
     println!();
     println!("== ShoesHumanFlats xform ==");
-    if let Ok(Some(t)) = usd_schemas::xform::read_transform(
+    if let Ok(Some(t)) = usd_schema::xform::read_transform(
         &stage,
         &openusd::sdf::Path::new("/Skel/Geometry/ShoesHumanFlats").unwrap(),
     ) {
@@ -432,14 +432,14 @@ fn main() {
     fn find_first_skel(
         stage: &openusd::Stage,
         p: &openusd::sdf::Path,
-    ) -> Option<usd_schemas::skel::ReadSkeleton> {
+    ) -> Option<usd_schema::skel::ReadSkeleton> {
         let tn = stage
             .field::<String>(p.clone(), "typeName")
             .ok()
             .flatten()
             .unwrap_or_default();
         if tn == "Skeleton" {
-            return usd_schemas::skel::read_skeleton(stage, p).ok().flatten();
+            return usd_schema::skel::read_skeleton(stage, p).ok().flatten();
         }
         for c in stage.prim_children(p.clone()).unwrap_or_default() {
             if let Ok(cp) = p.append_path(c.as_str()) {
@@ -479,7 +479,7 @@ fn main() {
         "/Skel/Geometry/HumanFemale/Geom/Face/Mouth/LowerMouth/LowerTeeth/LLowerTooth1_sbdv",
     ] {
         if let Ok(p) = openusd::sdf::Path::new(mp) {
-            if let Ok(Some(b)) = usd_schemas::skel::read_skel_binding(&stage, &p) {
+            if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(&stage, &p) {
                 println!(
                     "  {mp} → {} blend_shape_targets, {} blend_shapes (names)",
                     b.blend_shape_targets.len(),
@@ -517,7 +517,7 @@ fn main() {
     ) {
         let tn = stage.field::<String>(prim.clone(), "typeName").ok().flatten().unwrap_or_default();
         if tn == "Mesh" {
-            if let Ok(Some(b)) = usd_schemas::skel::read_skel_binding(stage, prim) {
+            if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(stage, prim) {
                 if !b.blend_shape_targets.is_empty() {
                     *bs_meshes += 1;
                     *bs_total += b.blend_shape_targets.len();
@@ -537,7 +537,7 @@ fn main() {
                             Ok(p) => p,
                             Err(_) => continue,
                         };
-                        if let Ok(Some(bs)) = usd_schemas::skel::read_blend_shape(stage, &bs_path) {
+                        if let Ok(Some(bs)) = usd_schema::skel::read_blend_shape(stage, &bs_path) {
                             if bs.point_indices.is_empty() {
                                 *bs_dense += 1;
                             } else {
@@ -576,7 +576,7 @@ fn main() {
             Ok(p) => p,
             Err(_) => continue,
         };
-        if let Ok(Some(m)) = usd_schemas::geom::read_mesh(&stage, &prim) {
+        if let Ok(Some(m)) = usd_schema::geom::read_mesh(&stage, &prim) {
             let mut mn = [f32::INFINITY; 3];
             let mut mx = [f32::NEG_INFINITY; 3];
             for p in &m.points {
@@ -603,7 +603,7 @@ fn main() {
     fn census(
         stage: &openusd::Stage,
         prim: &Path,
-        out: &mut Vec<(Path, Option<usd_schemas::skel::ReadSkelBinding>, usize)>,
+        out: &mut Vec<(Path, Option<usd_schema::skel::ReadSkelBinding>, usize)>,
     ) {
         let tn = stage
             .field::<String>(prim.clone(), "typeName")
@@ -611,8 +611,8 @@ fn main() {
             .flatten()
             .unwrap_or_default();
         if tn == "Mesh" {
-            let binding = usd_schemas::skel::read_skel_binding(stage, prim).ok().flatten();
-            let pts = usd_schemas::geom::read_mesh(stage, prim)
+            let binding = usd_schema::skel::read_skel_binding(stage, prim).ok().flatten();
+            let pts = usd_schema::geom::read_mesh(stage, prim)
                 .ok()
                 .flatten()
                 .map(|m| m.points.len())
@@ -637,7 +637,7 @@ fn main() {
     let mut by_purpose: std::collections::BTreeMap<String, usize> =
         std::collections::BTreeMap::new();
     for (path, _, _) in &all {
-        let purpose = usd_schemas::geom::read_purpose(&stage, path)
+        let purpose = usd_schema::geom::read_purpose(&stage, path)
             .ok()
             .unwrap_or_else(|| "default".into());
         *by_purpose.entry(purpose).or_insert(0) += 1;
@@ -661,7 +661,7 @@ fn main() {
     let mut subsetted_skinned = 0usize;
     let mut subsetted_paths = Vec::new();
     for (path, _, _) in all.iter().filter(|(_, b, _)| b.is_some()) {
-        if let Ok(Some(m)) = usd_schemas::geom::read_mesh(&stage, path) {
+        if let Ok(Some(m)) = usd_schema::geom::read_mesh(&stage, path) {
             if !m.subsets.is_empty() {
                 subsetted_skinned += 1;
                 if subsetted_paths.len() < 5 {

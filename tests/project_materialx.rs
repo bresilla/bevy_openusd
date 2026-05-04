@@ -1,10 +1,10 @@
-//! M17 integration test: `usd_schemas::shade::read_preview_material`
+//! M17 integration test: `usd_schema::shade::read_preview_material`
 //! handles MaterialX dialects (ND_UsdPreviewSurface_surfaceshader and
 //! ND_standard_surface_surfaceshader) in addition to native
 //! UsdPreviewSurface. Fixture authors all three variants on one stage.
 
 use openusd::sdf::Path;
-use usd_schemas::shade::read_preview_material;
+use usd_schema::shade::read_preview_material;
 
 #[test]
 fn reads_native_preview_materialx_wrapper_and_standard_surface() {

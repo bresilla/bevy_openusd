@@ -2,9 +2,9 @@
 //! `light:filters` relationships round-trip into `LightCommon`.
 
 use openusd::sdf::Path;
-use usd_schemas::lux::{read_light, ReadLight};
+use usd_schema::lux::{read_light, ReadLight};
 
-fn common_of(l: &ReadLight) -> &usd_schemas::lux::LightCommon {
+fn common_of(l: &ReadLight) -> &usd_schema::lux::LightCommon {
     match l {
         ReadLight::Distant(d) => &d.common,
         ReadLight::Sphere(s) => &s.common,

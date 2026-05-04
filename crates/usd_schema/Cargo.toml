@@ -1,0 +1,15 @@
+[package]
+name = "usd_schema"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+description = "Schema-authoring helpers (UsdGeom / UsdPhysics / UsdShade) layered on top of the spec-level `openusd` crate."
+repository = "https://github.com/bresilla/urdf2usd"
+keywords = ["usd", "openusd", "schema", "usdgeom", "usdphysics"]
+categories = ["graphics", "rendering::data-formats"]
+
+[dependencies]
+# Spec-level (Sdf) reader/writer. We provide the schema layer on top.
+openusd = { git = "https://github.com/mxpv/openusd", branch = "main" }
+anyhow = "1"
+glam = "0.30"

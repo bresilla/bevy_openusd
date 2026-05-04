@@ -1,5 +1,5 @@
 //! TetMesh integration test: assert that
-//! `usd_schemas::geom::read_tetmesh` decodes a fixture, that the
+//! `usd_schema::geom::read_tetmesh` decodes a fixture, that the
 //! boundary extractor in `bevy_openusd::tetmesh::tetmesh_to_bevy_mesh`
 //! produces the right number of triangles for a known topology,
 //! and that the loader spawns a mesh-carrying entity per TetMesh prim.
@@ -70,7 +70,7 @@ fn triangle_count(mesh: &Mesh) -> usize {
 
 #[test]
 fn boundary_face_count_matches_topology() {
-    use usd_schemas::geom::read_tetmesh;
+    use usd_schema::geom::read_tetmesh;
     let stage = openusd::Stage::open("tests/stages/tetmesh.usda")
         .expect("stage should open");
 

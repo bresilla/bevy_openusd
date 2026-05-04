@@ -1,5 +1,5 @@
 //! NURBS curves integration test: assert that
-//! `usd_schemas::geom::read_nurbs_curves` decodes the fixture, that
+//! `usd_schema::geom::read_nurbs_curves` decodes the fixture, that
 //! the De Boor sampler in `bevy_openusd::curves::nurbs_to_read_curves`
 //! produces a polyline whose endpoints match the first / last CVs
 //! (end-clamped property), and that the loader spawns one entity
@@ -62,7 +62,7 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 
 #[test]
 fn de_boor_endpoints_match_clamped_cvs() {
-    use usd_schemas::geom::read_nurbs_curves;
+    use usd_schema::geom::read_nurbs_curves;
 
     let stage = openusd::Stage::open("tests/stages/nurbs_curves.usda")
         .expect("stage should open");

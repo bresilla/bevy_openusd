@@ -110,7 +110,7 @@ fn main() {
             == Some("Material")
         {
             println!("\n=== read_preview_material on {} ===", prim.as_str());
-            match usd_schemas::shade::read_preview_material(stage, prim) {
+            match usd_schema::shade::read_preview_material(stage, prim) {
                 Ok(Some(m)) => println!("  decoded: {:#?}", m),
                 Ok(None) => println!("  decoded: None (unrecognised shader)"),
                 Err(e) => println!("  err: {e}"),

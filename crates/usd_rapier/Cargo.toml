@@ -1,0 +1,15 @@
+[package]
+name = "usd_rapier"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+description = "Pure-Rust UsdPhysics → rapier3d-f64 conversion. No Bevy. Consumed by `bevy_openusd_rapier` and any non-Bevy host (gearbox)."
+repository = "https://github.com/bresilla/bevy_openusd"
+
+[dependencies]
+openusd = { git = "https://github.com/mxpv/openusd", branch = "main", features = ["physics"] }
+rapier3d-f64 = "0.32"
+glam = "0.30"
+anyhow = "1"
+log = "0.4"
+usd_schema = { path = "../usd_schema" }

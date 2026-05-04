@@ -71,7 +71,7 @@ fn reads_double_sided_orientation_and_extent() {
     let stage = openusd::Stage::open("tests/stages/mesh_correctness.usda")
         .expect("fixture parses");
     use openusd::sdf::Path;
-    use usd_schemas::geom::{read_mesh, Orientation};
+    use usd_schema::geom::{read_mesh, Orientation};
 
     let single = read_mesh(&stage, &Path::new("/World/SingleSided").unwrap())
         .expect("read ok")

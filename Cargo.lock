@@ -1078,38 +1078,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ef8e4b7e61dfe7719bb03c884dc270cd46a82efb40f93e9933b990c5c190c59"
 
 [[package]]
-name = "bevy_openusd"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "bevy",
- "bevy_egui",
- "bevy_frost",
- "bevy_glacial",
- "bevy_openusd_rapier",
- "image",
- "openusd",
- "rapier3d-f64",
- "rfd",
- "serde",
- "thiserror 2.0.18",
- "usd_physics_markers",
- "usd_schemas",
- "zip",
-]
-
-[[package]]
-name = "bevy_openusd_rapier"
-version = "0.0.1"
-dependencies = [
- "bevy",
- "bevy_openusd",
- "nalgebra",
- "rapier3d-f64",
- "usd_physics_markers",
-]
-
-[[package]]
 name = "bevy_pbr"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5461,19 +5429,59 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
-name = "usd_physics_markers"
+name = "usd_bevy"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "bevy",
+ "glam 0.30.10",
+ "image",
+ "log",
+ "openusd",
+ "rapier3d-f64",
+ "serde",
+ "thiserror 2.0.18",
+ "usd_rapier",
+ "usd_schema",
+ "zip",
 ]
 
 [[package]]
-name = "usd_schemas"
+name = "usd_rapier"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "glam 0.30.10",
+ "log",
+ "openusd",
+ "rapier3d-f64",
+ "usd_schema",
+]
+
+[[package]]
+name = "usd_schema"
 version = "0.0.1"
 dependencies = [
  "anyhow",
  "glam 0.30.10",
  "openusd",
+]
+
+[[package]]
+name = "usdview"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy_egui",
+ "bevy_frost",
+ "bevy_glacial",
+ "image",
+ "rapier3d-f64",
+ "rfd",
+ "usd_bevy",
+ "usd_schema",
+ "zip",
 ]
 
 [[package]]

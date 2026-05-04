@@ -1,5 +1,5 @@
 //! NURBS patch integration test: assert that
-//! `usd_schemas::geom::read_nurbs_patch` decodes a 4×4 cubic patch,
+//! `usd_schema::geom::read_nurbs_patch` decodes a 4×4 cubic patch,
 //! that the tensor-product evaluator in
 //! `bevy_openusd::nurbs_patch::nurbs_patch_to_bevy_mesh` produces a
 //! 32×32 sample grid (1024 verts / 1922 tris), and that the corner
@@ -62,7 +62,7 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 
 #[test]
 fn corners_match_clamped_cvs() {
-    use usd_schemas::geom::read_nurbs_patch;
+    use usd_schema::geom::read_nurbs_patch;
     let stage =
         openusd::Stage::open("tests/stages/nurbs_patch.usda").expect("stage should open");
     let p = read_nurbs_patch(

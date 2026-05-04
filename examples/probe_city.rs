@@ -19,7 +19,7 @@ fn main() {
     // Exercise the schema readers directly so we see what our fallback
     // produces, not just what's in the raw default field.
     let inst_path = Path::new("/MediterraneanHills/Buildings").unwrap();
-    match usd_schemas::geom::read_point_instancer(&stage, &inst_path) {
+    match usd_schema::geom::read_point_instancer(&stage, &inst_path) {
         Ok(Some(d)) => println!(
             "read_point_instancer OK: positions={} protoIndices={} prototypes={}",
             d.positions.len(),
@@ -35,7 +35,7 @@ fn main() {
         print!("prototype_{pi}: children={children:?}");
         for ch in &children {
             if let Ok(child_path) = proto.append_path(ch.as_str()) {
-                if let Ok(Some(m)) = usd_schemas::geom::read_mesh(&stage, &child_path) {
+                if let Ok(Some(m)) = usd_schema::geom::read_mesh(&stage, &child_path) {
                     print!(" {ch}=(p{},f{})", m.points.len(), m.face_vertex_counts.len());
                 } else {
                     let tn: String = stage.field::<String>(child_path.clone(), "typeName").ok().flatten().unwrap_or_default();
@@ -45,7 +45,7 @@ fn main() {
         }
         println!();
     }
-    if let Ok(Some(d)) = usd_schemas::geom::read_point_instancer(&stage, &inst_path) {
+    if let Ok(Some(d)) = usd_schema::geom::read_point_instancer(&stage, &inst_path) {
         let mut counts = std::collections::BTreeMap::<i32, usize>::new();
         for p in &d.proto_indices {
             *counts.entry(*p).or_insert(0) += 1;
@@ -85,7 +85,7 @@ fn main() {
         }
     }
     let mesh_path = Path::new("/MediterraneanHills/Buildings/Prototypes/prototype_0/mesh_0").unwrap();
-    if let Ok(Some(m)) = usd_schemas::geom::read_mesh(&stage, &mesh_path) {
+    if let Ok(Some(m)) = usd_schema::geom::read_mesh(&stage, &mesh_path) {
         let mut mn = [f32::INFINITY; 3];
         let mut mx = [f32::NEG_INFINITY; 3];
         for p in &m.points {

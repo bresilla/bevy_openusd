@@ -4,7 +4,7 @@
 //! with the expected per-vertex stride/values.
 
 use openusd::sdf::Path;
-use usd_schemas::geom::{read_mesh, Interpolation};
+use usd_schema::geom::{read_mesh, Interpolation};
 
 #[test]
 fn reads_all_five_primvar_interpolations() {
@@ -145,6 +145,6 @@ fn read_attr_color4(mesh: &bevy::mesh::Mesh) -> Vec<[f32; 4]> {
 // `mesh_from_usd` is a private module path normally, but we re-export
 // just enough via `bevy_openusd` to exercise it in tests. If/when
 // `bevy_openusd::mesh` becomes public, this shim goes away.
-fn bevy_openusd_mesh_from_usd(read: &usd_schemas::geom::ReadMesh) -> bevy::mesh::Mesh {
+fn bevy_openusd_mesh_from_usd(read: &usd_schema::geom::ReadMesh) -> bevy::mesh::Mesh {
     bevy_openusd::mesh_from_usd(read)
 }

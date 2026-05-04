@@ -1,5 +1,5 @@
 //! HermiteCurves integration test: assert that
-//! `usd_schemas::geom::read_hermite_curves` decodes the fixture, that
+//! `usd_schema::geom::read_hermite_curves` decodes the fixture, that
 //! the cubic-Hermite sampler in
 //! `bevy_openusd::curves::hermite_to_read_curves` matches each authored
 //! CV exactly at segment endpoints (h00(0)=h01(1)=1, all other basis
@@ -63,7 +63,7 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 
 #[test]
 fn hermite_sampler_matches_cv_endpoints() {
-    use usd_schemas::geom::read_hermite_curves;
+    use usd_schema::geom::read_hermite_curves;
     let stage =
         openusd::Stage::open("tests/stages/hermite_curves.usda").expect("stage should open");
     let h = read_hermite_curves(

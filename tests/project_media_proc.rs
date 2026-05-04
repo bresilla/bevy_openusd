@@ -1,6 +1,6 @@
 //! UsdMedia.SpatialAudio + UsdProc integration test. Asserts that
-//! `usd_schemas::media::read_spatial_audio` and
-//! `usd_schemas::proc::read_procedural` decode their fixtures, and
+//! `usd_schema::media::read_spatial_audio` and
+//! `usd_schema::proc::read_procedural` decode their fixtures, and
 //! that the loader attaches `UsdSpatialAudio` / `UsdProcedural`
 //! components to the right entities (and only the right entities).
 
@@ -64,7 +64,7 @@ fn schema_readers_decode_authored_attrs() {
     let stage =
         openusd::Stage::open("tests/stages/media_proc.usda").expect("stage should open");
 
-    let bell = usd_schemas::media::read_spatial_audio(
+    let bell = usd_schema::media::read_spatial_audio(
         &stage,
         &openusd::sdf::Path::new("/World/Bell").expect("valid path"),
     )
@@ -76,14 +76,14 @@ fn schema_readers_decode_authored_attrs() {
     assert_eq!(bell.playback_mode.as_deref(), Some("loopFromStart"));
     assert_eq!(bell.gain, Some(0.8));
 
-    let plain = usd_schemas::media::read_spatial_audio(
+    let plain = usd_schema::media::read_spatial_audio(
         &stage,
         &openusd::sdf::Path::new("/World/Plain").expect("valid path"),
     )
     .expect("read ok");
     assert!(plain.is_none());
 
-    let forest = usd_schemas::proc::read_procedural(
+    let forest = usd_schema::proc::read_procedural(
         &stage,
         &openusd::sdf::Path::new("/World/Forest").expect("valid path"),
     )

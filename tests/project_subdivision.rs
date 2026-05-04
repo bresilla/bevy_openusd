@@ -8,7 +8,7 @@ use bevy::pbr::MeshMaterial3d;
 use bevy::prelude::*;
 use bevy::scene::{Scene, SceneRoot};
 use bevy_openusd::{UsdAsset, UsdPlugin};
-use usd_schemas::geom::SubdivScheme;
+use usd_schema::geom::SubdivScheme;
 
 fn build_test_app() -> App {
     let mut app = App::new();
@@ -94,15 +94,15 @@ fn reads_subdivision_scheme_and_tallies_subsurface_prims() {
     // Direct reader check.
     let stage = openusd::Stage::open("tests/stages/subdivision.usda").unwrap();
     use openusd::sdf::Path;
-    let flat = usd_schemas::geom::read_mesh(&stage, &Path::new("/World/Flat").unwrap())
+    let flat = usd_schema::geom::read_mesh(&stage, &Path::new("/World/Flat").unwrap())
         .unwrap()
         .unwrap();
     assert_eq!(flat.subdivision_scheme, SubdivScheme::None);
-    let cc = usd_schemas::geom::read_mesh(&stage, &Path::new("/World/CatmullClark").unwrap())
+    let cc = usd_schema::geom::read_mesh(&stage, &Path::new("/World/CatmullClark").unwrap())
         .unwrap()
         .unwrap();
     assert_eq!(cc.subdivision_scheme, SubdivScheme::CatmullClark);
-    let un = usd_schemas::geom::read_mesh(&stage, &Path::new("/World/Unauthored").unwrap())
+    let un = usd_schema::geom::read_mesh(&stage, &Path::new("/World/Unauthored").unwrap())
         .unwrap()
         .unwrap();
     assert_eq!(un.subdivision_scheme, SubdivScheme::None);

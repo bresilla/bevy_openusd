@@ -10,7 +10,7 @@ fn main() {
         .nth(1)
         .unwrap_or_else(|| "assets/UsdSkelExamples/HumanFemale/HumanFemale.walk.usd".to_string());
     let text = std::fs::read_to_string(Path::new(&path)).expect("read .usda text");
-    let anims = usd_schemas::skel_anim_text::scan_skel_animations(&text);
+    let anims = usd_schema::skel_anim_text::scan_skel_animations(&text);
     println!("scanned {} SkelAnimation prim(s)", anims.len());
     for a in &anims {
         println!(

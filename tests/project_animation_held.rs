@@ -2,7 +2,7 @@
 //! time-sampled attribute produces step-function evaluation.
 
 use openusd::sdf::Path;
-use usd_schemas::anim::{eval_scalar_track, read_animated_prim, InterpMode};
+use usd_schema::anim::{eval_scalar_track, read_animated_prim, InterpMode};
 
 #[test]
 fn held_interpolation_snaps_to_lower_sample() {

@@ -1,5 +1,5 @@
 //! UsdUI integration test: assert that authored `ui:displayName`
-//! tokens are read by `usd_schemas::ui::read_display_name` and that
+//! tokens are read by `usd_schema::ui::read_display_name` and that
 //! the loader attaches a `UsdDisplayName` component to the prim
 //! entity. Prims without an authored display name don't get the
 //! component (so the tree falls back to the prim leaf name).
@@ -62,7 +62,7 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 #[test]
 fn schema_reader_decodes_display_name() {
     let stage = openusd::Stage::open("tests/stages/usdui.usda").expect("stage should open");
-    let dn = usd_schemas::ui::read_display_name(
+    let dn = usd_schema::ui::read_display_name(
         &stage,
         &openusd::sdf::Path::new("/World/robot_v3_baseLink_geom_0").expect("valid path"),
     )
@@ -70,14 +70,14 @@ fn schema_reader_decodes_display_name() {
     println!("\n---- ui:displayName ----\n  {:?}", dn);
     assert_eq!(dn.as_deref(), Some("Main Body"));
 
-    let dg = usd_schemas::ui::read_display_group(
+    let dg = usd_schema::ui::read_display_group(
         &stage,
         &openusd::sdf::Path::new("/World/robot_v3_baseLink_geom_0").expect("valid path"),
     )
     .expect("read ok");
     assert_eq!(dg.as_deref(), Some("robot"));
 
-    let no_dn = usd_schemas::ui::read_display_name(
+    let no_dn = usd_schema::ui::read_display_name(
         &stage,
         &openusd::sdf::Path::new("/World/Plain").expect("valid path"),
     )

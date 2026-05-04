@@ -32,8 +32,11 @@ c: compile
 
 # `cargo run` launches the viewer binary in the root package.
 # Pass args through: `make run ARGS="path/to/scene.usda"`.
+# Set RELEASE=1 to build with optimisations (much smoother rendering
+# for heavy scenes like the tractor / city).
+RELEASE_FLAG := $(if $(RELEASE),--release,)
 run:
-	@$(RUN_ENV) $(CARGO) run -- $(ARGS)
+	@$(RUN_ENV) $(CARGO) run $(RELEASE_FLAG) -- $(ARGS)
 
 r: run
 

@@ -151,14 +151,14 @@ fn main() {
         "/root/Rachis_main_spline_0_21/Rachis_main_spline_0_21_curve",
     ] {
         let prim = Path::new(sample).unwrap();
-        let bind = usd_schemas::shade::read_material_binding(&stage, &prim);
+        let bind = usd_schema::shade::read_material_binding(&stage, &prim);
         match &bind {
             Ok(Some(p)) => println!("  {} -> binding={}", sample, p.as_str()),
             Ok(None) => println!("  {} -> binding=None", sample),
             Err(e) => println!("  {} -> binding ERR {}", sample, e),
         }
         if let Ok(Some(mat_path)) = bind {
-            match usd_schemas::shade::read_preview_material(&stage, &mat_path) {
+            match usd_schema::shade::read_preview_material(&stage, &mat_path) {
                 Ok(Some(mat)) => println!(
                     "        diffuse={:?} opacity={:?} roughness={:?} metallic={:?} diffuse_tex={:?} normal_tex={:?}",
                     mat.diffuse_color, mat.opacity, mat.roughness, mat.metallic,
@@ -170,14 +170,14 @@ fn main() {
         }
     }
 
-    println!("\n== usd_schemas::geom::read_mesh on plant prims ==");
+    println!("\n== usd_schema::geom::read_mesh on plant prims ==");
     for sample in [
         "/root/Block_1_001/SM_RockwoolBlock",
         "/root/Rachis_main_spline_0_21/Rachis_main_spline_0_21_curve",
         "/root/Rachis_main_spline_0_21/Rachis_branch_spline_0_21_11/Rachis_branch_spline_0_21_11",
     ] {
         let prim = Path::new(sample).unwrap();
-        match usd_schemas::geom::read_mesh(&stage, &prim) {
+        match usd_schema::geom::read_mesh(&stage, &prim) {
             Ok(Some(rm)) => println!(
                 "  {}: points={} face_counts={} indices={} subsets={} normals={}",
                 sample,
