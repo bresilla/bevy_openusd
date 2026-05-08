@@ -88,7 +88,69 @@ impl Plugin for RapierAdapterPlugin {
                         .after(colliders::convert_colliders),
                 ),
             )
-            .add_systems(PostUpdate, writeback::writeback_transforms)
+            // Writeback only runs while physics is stepping. With it
+            // ungated, every frame we copy each body's *initial* pose
+            // back over any external Transform mutation (e.g. a user
+            // dragging the LoadedAsset root with a transform gizmo),
+            // which makes the visual snap back to its mount point even
+            // though the gizmo itself has moved.
+            .add_systems(
+                PostUpdate,
+                writeback::writeback_transforms.run_if(physics_is_active),
+            )
+            // On the OFF→ON edge of `PhysicsActive`, sync every rapier
+            // body's pose to the entity's current `GlobalTransform`.
+            // Without this, dragging an asset around with a gizmo while
+            // physics is paused leaves rapier holding the body's stale
+            // load-time pose; resuming physics then snaps writeback to
+            // that stale pose and the visual jumps back to where it was
+            // before the drag.
+            .add_systems(
+                Update,
+                sync_bodies_to_transforms_on_resume.before(world::step_physics),
+            )
             .add_systems(Last, debug::draw_collider_gizmos);
+    }
+}
+
+fn physics_is_active(active: bevy::prelude::Res<PhysicsActive>) -> bool {
+    active.0
+}
+
+fn sync_bodies_to_transforms_on_resume(
+    active: Res<PhysicsActive>,
+    mut prev_active: Local<bool>,
+    mut world: ResMut<PhysicsWorld>,
+    transforms: Query<&GlobalTransform>,
+) {
+    let was = *prev_active;
+    *prev_active = active.0;
+    if !active.0 || was {
+        return;
+    }
+    use rapier3d_f64::prelude::*;
+    let world = world.as_mut();
+    let pairs: Vec<(Entity, RigidBodyHandle)> = world
+        .entity_to_body
+        .iter()
+        .map(|(e, h)| (*e, *h))
+        .collect();
+    for (entity, handle) in pairs {
+        let Ok(gt) = transforms.get(entity) else {
+            continue;
+        };
+        let t = gt.compute_transform();
+        let Some(rb) = world.bodies.get_mut(handle) else {
+            continue;
+        };
+        let pose = Pose {
+            translation: convert::vec3_to_d(t.translation),
+            rotation: convert::quat_to_d(t.rotation),
+        };
+        rb.set_position(pose, true);
+        // Linear & angular velocities reset so the body doesn't
+        // inherit whatever it had before the user paused.
+        rb.set_linvel(glam::DVec3::ZERO, true);
+        rb.set_angvel(glam::DVec3::ZERO, true);
     }
 }
