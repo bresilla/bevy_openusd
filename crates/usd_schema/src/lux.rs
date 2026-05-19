@@ -221,12 +221,10 @@ fn read_common(stage: &openusd::Stage, prim: &Path) -> Result<LightCommon> {
     })
 }
 
-fn read_rel_targets(
-    stage: &openusd::Stage,
-    prim: &Path,
-    rel_name: &str,
-) -> Result<Vec<String>> {
-    let rel_path = prim.append_property(rel_name).map_err(anyhow::Error::from)?;
+fn read_rel_targets(stage: &openusd::Stage, prim: &Path, rel_name: &str) -> Result<Vec<String>> {
+    let rel_path = prim
+        .append_property(rel_name)
+        .map_err(anyhow::Error::from)?;
     let raw = stage
         .field::<Value>(rel_path, "targetPaths")
         .map_err(anyhow::Error::from)?;

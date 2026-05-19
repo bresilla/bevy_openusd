@@ -38,7 +38,9 @@ fn load_and_spawn(app: &mut App, asset_name: &str) {
     for _ in 0..200 {
         app.update();
         if matches!(
-            app.world().resource::<AssetServer>().get_load_state(&handle),
+            app.world()
+                .resource::<AssetServer>()
+                .get_load_state(&handle),
             Some(LoadState::Loaded)
         ) {
             break;
@@ -82,19 +84,33 @@ fn generic_joint_decodes_multi_apply_limits_and_drives() {
         .get::<UsdPhysicsJoint>(g_e)
         .expect("GenericAB missing UsdPhysicsJoint");
     assert_eq!(g.kind, UsdJointKind::Generic);
-    assert_eq!(g.limits.len(), 2, "expected 2 LimitAPI entries, got {:?}", g.limits);
+    assert_eq!(
+        g.limits.len(),
+        2,
+        "expected 2 LimitAPI entries, got {:?}",
+        g.limits
+    );
 
-    let trans_x = g.limits.iter().find(|l| l.dof == UsdDof::TransX).expect("missing transX limit");
+    let trans_x = g
+        .limits
+        .iter()
+        .find(|l| l.dof == UsdDof::TransX)
+        .expect("missing transX limit");
     // transX low > high → locked; values are in metres (× metersPerUnit, here 1.0).
     assert!(
         trans_x.low > trans_x.high,
         "transX should preserve lock convention low>high; got low={} high={}",
-        trans_x.low, trans_x.high
+        trans_x.low,
+        trans_x.high
     );
     assert!(approx(trans_x.low, 1.0, 1e-5));
     assert!(approx(trans_x.high, 0.0, 1e-5));
 
-    let rot_z = g.limits.iter().find(|l| l.dof == UsdDof::RotZ).expect("missing rotZ limit");
+    let rot_z = g
+        .limits
+        .iter()
+        .find(|l| l.dof == UsdDof::RotZ)
+        .expect("missing rotZ limit");
     // rotZ -30/30 degrees → -π/6 / π/6 radians.
     assert!(
         approx(rot_z.low, -PI / 6.0, 1e-5),
@@ -113,7 +129,9 @@ fn generic_joint_decodes_multi_apply_limits_and_drives() {
     let d = &g.drives[0];
     assert_eq!(d.dof, UsdDof::RotZ);
     assert_eq!(d.drive_type, UsdDriveType::Force);
-    let tv = d.target_velocity.expect("targetVelocity should be authored");
+    let tv = d
+        .target_velocity
+        .expect("targetVelocity should be authored");
     assert!(
         approx(tv, PI / 2.0, 1e-5),
         "drive target_velocity: expected π/2 rad/s, got {tv}"
@@ -136,7 +154,9 @@ fn generic_joint_decodes_multi_apply_limits_and_drives() {
         .get::<UsdPhysicsJoint>(s_e)
         .expect("Ball missing UsdPhysicsJoint");
     assert_eq!(s.kind, UsdJointKind::Spherical);
-    let (c0, c1) = s.cone_limit.expect("spherical cone limits should be authored");
+    let (c0, c1) = s
+        .cone_limit
+        .expect("spherical cone limits should be authored");
     assert!(approx(c0, PI / 4.0, 1e-5), "cone0: expected π/4, got {c0}");
     assert!(approx(c1, PI / 6.0, 1e-5), "cone1: expected π/6, got {c1}");
 

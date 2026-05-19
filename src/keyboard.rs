@@ -9,7 +9,7 @@ use bevy_frost::RibbonOpen;
 
 use crate::overlays::DisplayToggles;
 use crate::state::ReloadRequest;
-use crate::ui::{ViewerCommandPalette, RIBBON_LEFT, RIB_INFO, RIB_KEYS, RIB_OVERLAYS, RIB_TREE};
+use crate::ui::{RIB_INFO, RIB_KEYS, RIB_OVERLAYS, RIB_TREE, RIBBON_LEFT, ViewerCommandPalette};
 
 pub struct ViewerKeyboardPlugin;
 

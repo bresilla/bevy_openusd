@@ -61,8 +61,7 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 
 #[test]
 fn schema_readers_decode_authored_attrs() {
-    let stage =
-        openusd::Stage::open("tests/stages/media_proc.usda").expect("stage should open");
+    let stage = openusd::Stage::open("tests/stages/media_proc.usda").expect("stage should open");
 
     let bell = usd_schema::media::read_spatial_audio(
         &stage,
@@ -90,10 +89,7 @@ fn schema_readers_decode_authored_attrs() {
     .expect("read ok")
     .expect("Forest should decode");
     println!("---- Procedural Forest ----\n  {forest:?}");
-    assert_eq!(
-        forest.procedural_type.as_deref(),
-        Some("HoudiniProcedural")
-    );
+    assert_eq!(forest.procedural_type.as_deref(), Some("HoudiniProcedural"));
     assert_eq!(forest.procedural_system.as_deref(), Some("houdini"));
 }
 

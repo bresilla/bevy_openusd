@@ -205,8 +205,8 @@ pub fn sample_scalar_concrete(samples: &[(f64, f32)], t: f64) -> Option<f32> {
     if t >= t_last {
         return Some(samples.last().unwrap().1);
     }
-    let idx = samples
-        .binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
+    let idx =
+        samples.binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
     let (lo, hi) = match idx {
         Ok(i) => return Some(samples[i].1),
         Err(i) => (i - 1, i),
@@ -292,8 +292,8 @@ pub fn sample_vec3_concrete(samples: &[(f64, [f32; 3])], t: f64) -> Option<[f32;
     if t >= t_last {
         return Some(samples.last().unwrap().1);
     }
-    let idx = samples
-        .binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
+    let idx =
+        samples.binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
     let (lo, hi) = match idx {
         Ok(i) => return Some(samples[i].1),
         Err(i) => (i - 1, i),
@@ -345,8 +345,8 @@ pub fn sample_vec3_at(samples: &[(f64, Value)], t: f64) -> Option<[f32; 3]> {
     // Binary search for the bracketing pair. Both arms of the bracket
     // must decode to a vec3 or we fail the whole lookup rather than
     // silently jumping.
-    let idx = samples
-        .binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
+    let idx =
+        samples.binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
     let (lo, hi) = match idx {
         Ok(i) => return value_to_vec3f(&samples[i].1),
         Err(i) => (i - 1, i),
@@ -378,8 +378,8 @@ pub fn sample_double_at(samples: &[(f64, Value)], t: f64) -> Option<f64> {
     if t >= t_last {
         return value_to_double(&samples.last().unwrap().1);
     }
-    let idx = samples
-        .binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
+    let idx =
+        samples.binary_search_by(|(tt, _)| tt.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal));
     let (lo, hi) = match idx {
         Ok(i) => return value_to_double(&samples[i].1),
         Err(i) => (i - 1, i),

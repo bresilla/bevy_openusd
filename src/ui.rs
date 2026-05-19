@@ -16,13 +16,13 @@ use bevy::ecs::hierarchy::Children;
 use bevy::mesh::Mesh3d;
 use bevy::pbr::{MeshMaterial3d, StandardMaterial};
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts, EguiPrimaryContextPass};
+use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 use bevy_frost::prelude::*;
 use bevy_frost::style;
 use bevy_frost::widgets::section as nested_section;
-use usd_bevy::{UsdAsset, UsdDisplayName, UsdKind, UsdPrimRef, UsdProcedural, UsdSpatialAudio};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use usd_bevy::{UsdAsset, UsdDisplayName, UsdKind, UsdPrimRef, UsdProcedural, UsdSpatialAudio};
 
 use crate::camera::ArcballCamera;
 use crate::overlays::DisplayToggles;
@@ -188,21 +188,81 @@ pub struct ViewerCommandPalette(pub CommandPaletteState);
 /// The palette's static action list. Adding a new id here only
 /// requires a matching arm in `dispatch_palette` below.
 const PALETTE_ITEMS: &[PaletteItem] = &[
-    PaletteItem { id: "open_selection", label: "Open: Selection panel", hint: Some("F") },
-    PaletteItem { id: "open_tree", label: "Open: Prim tree", hint: Some("T") },
-    PaletteItem { id: "open_info", label: "Open: Stage info", hint: Some("I") },
-    PaletteItem { id: "open_variants", label: "Open: Variants", hint: None },
-    PaletteItem { id: "open_cameras", label: "Open: Cameras", hint: None },
-    PaletteItem { id: "open_overlays", label: "Open: Overlays", hint: Some("O") },
-    PaletteItem { id: "open_timeline", label: "Open: Timeline", hint: None },
-    PaletteItem { id: "open_keys", label: "Open: Controls", hint: Some("?") },
-    PaletteItem { id: "open_log", label: "Open: Log", hint: None },
-    PaletteItem { id: "toggle_grid", label: "Toggle: Ground grid", hint: Some("G") },
-    PaletteItem { id: "toggle_axes", label: "Toggle: World axes", hint: Some("X") },
-    PaletteItem { id: "toggle_markers", label: "Toggle: Prim markers", hint: Some("P") },
-    PaletteItem { id: "toggle_wireframe", label: "Toggle: Wireframe", hint: None },
-    PaletteItem { id: "reload_stage", label: "Stage: Reload", hint: Some("R") },
-    PaletteItem { id: "browse_usd", label: "Stage: Browse for USD…", hint: None },
+    PaletteItem {
+        id: "open_selection",
+        label: "Open: Selection panel",
+        hint: Some("F"),
+    },
+    PaletteItem {
+        id: "open_tree",
+        label: "Open: Prim tree",
+        hint: Some("T"),
+    },
+    PaletteItem {
+        id: "open_info",
+        label: "Open: Stage info",
+        hint: Some("I"),
+    },
+    PaletteItem {
+        id: "open_variants",
+        label: "Open: Variants",
+        hint: None,
+    },
+    PaletteItem {
+        id: "open_cameras",
+        label: "Open: Cameras",
+        hint: None,
+    },
+    PaletteItem {
+        id: "open_overlays",
+        label: "Open: Overlays",
+        hint: Some("O"),
+    },
+    PaletteItem {
+        id: "open_timeline",
+        label: "Open: Timeline",
+        hint: None,
+    },
+    PaletteItem {
+        id: "open_keys",
+        label: "Open: Controls",
+        hint: Some("?"),
+    },
+    PaletteItem {
+        id: "open_log",
+        label: "Open: Log",
+        hint: None,
+    },
+    PaletteItem {
+        id: "toggle_grid",
+        label: "Toggle: Ground grid",
+        hint: Some("G"),
+    },
+    PaletteItem {
+        id: "toggle_axes",
+        label: "Toggle: World axes",
+        hint: Some("X"),
+    },
+    PaletteItem {
+        id: "toggle_markers",
+        label: "Toggle: Prim markers",
+        hint: Some("P"),
+    },
+    PaletteItem {
+        id: "toggle_wireframe",
+        label: "Toggle: Wireframe",
+        hint: None,
+    },
+    PaletteItem {
+        id: "reload_stage",
+        label: "Stage: Reload",
+        hint: Some("R"),
+    },
+    PaletteItem {
+        id: "browse_usd",
+        label: "Stage: Browse for USD…",
+        hint: None,
+    },
 ];
 
 // ─── Plugin ─────────────────────────────────────────────────────────
@@ -454,53 +514,23 @@ fn draw_tree_panel(
                     .min_scrolled_height(600.0)
                     .max_height(600.0)
                     .show(ui, |ui| {
-                    if flat {
-                        let mut matches: Vec<(Entity, &Name, &UsdPrimRef, Option<&UsdDisplayName>)> =
-                            prims
+                        if flat {
+                            let mut matches: Vec<(
+                                Entity,
+                                &Name,
+                                &UsdPrimRef,
+                                Option<&UsdDisplayName>,
+                            )> = prims
                                 .iter()
                                 .filter(|(_, _, pref, _)| {
                                     pref.path.to_lowercase().contains(&filter_lc)
                                 })
                                 .collect();
-                        matches.sort_by(|a, b| a.2.path.cmp(&b.2.path));
-                        if matches.is_empty() {
-                            sub_caption(ui, "(no matches)");
-                        }
-                        for (entity, name, pref, dn) in &matches {
-                            let sub = draw_tree_row(
-                                ui,
-                                *entity,
-                                name,
-                                pref,
-                                *dn,
-                                &prims,
-                                &mat_q,
-                                &materials,
-                                &mut vis_cache,
-                                &children,
-                                &selected,
-                                &mut expanded,
-                                accent_col,
-                                0,
-                                true,
-                            );
-                            outcome.merge(sub);
-                        }
-                    } else {
-                        let mut roots: Vec<(Entity, &Name, &UsdPrimRef, Option<&UsdDisplayName>)> =
-                            prims
-                                .iter()
-                                .filter(|(_, _, pref, _)| {
-                                    let p = pref.path.as_str();
-                                    p.starts_with('/') && p.len() > 1 && !p[1..].contains('/')
-                                })
-                                .collect();
-                        roots.sort_by(|a, b| a.2.path.cmp(&b.2.path));
-
-                        if roots.is_empty() {
-                            sub_caption(ui, "(no prims yet — stage loading)");
-                        } else {
-                            for (entity, name, pref, dn) in &roots {
+                            matches.sort_by(|a, b| a.2.path.cmp(&b.2.path));
+                            if matches.is_empty() {
+                                sub_caption(ui, "(no matches)");
+                            }
+                            for (entity, name, pref, dn) in &matches {
                                 let sub = draw_tree_row(
                                     ui,
                                     *entity,
@@ -516,13 +546,51 @@ fn draw_tree_panel(
                                     &mut expanded,
                                     accent_col,
                                     0,
-                                    false,
+                                    true,
                                 );
                                 outcome.merge(sub);
                             }
+                        } else {
+                            let mut roots: Vec<(
+                                Entity,
+                                &Name,
+                                &UsdPrimRef,
+                                Option<&UsdDisplayName>,
+                            )> = prims
+                                .iter()
+                                .filter(|(_, _, pref, _)| {
+                                    let p = pref.path.as_str();
+                                    p.starts_with('/') && p.len() > 1 && !p[1..].contains('/')
+                                })
+                                .collect();
+                            roots.sort_by(|a, b| a.2.path.cmp(&b.2.path));
+
+                            if roots.is_empty() {
+                                sub_caption(ui, "(no prims yet — stage loading)");
+                            } else {
+                                for (entity, name, pref, dn) in &roots {
+                                    let sub = draw_tree_row(
+                                        ui,
+                                        *entity,
+                                        name,
+                                        pref,
+                                        *dn,
+                                        &prims,
+                                        &mat_q,
+                                        &materials,
+                                        &mut vis_cache,
+                                        &children,
+                                        &selected,
+                                        &mut expanded,
+                                        accent_col,
+                                        0,
+                                        false,
+                                    );
+                                    outcome.merge(sub);
+                                }
+                            }
                         }
-                    }
-                });
+                    });
 
                 // Commit eye-icon toggles back to the ECS.
                 for (entity, visible) in &vis_cache {
@@ -545,8 +613,7 @@ fn draw_tree_panel(
                                 (gt_query.get(entity), cameras.single())
                             {
                                 let target = target_gt.translation();
-                                let target_dist =
-                                    (cam.distance * 0.25).clamp(0.2, 40.0);
+                                let target_dist = (cam.distance * 0.25).clamp(0.2, 40.0);
                                 fly.start_focus = cam.focus;
                                 fly.start_distance = cam.distance;
                                 fly.target_focus = target;
@@ -559,7 +626,11 @@ fn draw_tree_panel(
                             selected.0 = Some(entity);
                             if let Ok(cam) = cameras.single() {
                                 let (target, target_dist) = fit_params_for_entity(
-                                    entity, &gt_query, &extent_q, &children, cam.distance,
+                                    entity,
+                                    &gt_query,
+                                    &extent_q,
+                                    &children,
+                                    cam.distance,
                                 );
                                 fly.start_focus = cam.focus;
                                 fly.start_distance = cam.distance;
@@ -570,14 +641,10 @@ fn draw_tree_panel(
                             }
                         }
                         CtxAction::ExpandDesc(entity) => {
-                            set_subtree_expanded(
-                                entity, &prims, &children, &mut expanded, true,
-                            );
+                            set_subtree_expanded(entity, &prims, &children, &mut expanded, true);
                         }
                         CtxAction::CollapseDesc(entity) => {
-                            set_subtree_expanded(
-                                entity, &prims, &children, &mut expanded, false,
-                            );
+                            set_subtree_expanded(entity, &prims, &children, &mut expanded, false);
                         }
                     }
                 }
@@ -586,7 +653,11 @@ fn draw_tree_panel(
                     selected.0 = Some(entity);
                     if let Ok(cam) = cameras.single() {
                         let (target, target_dist) = fit_params_for_entity(
-                            entity, &gt_query, &extent_q, &children, cam.distance,
+                            entity,
+                            &gt_query,
+                            &extent_q,
+                            &children,
+                            cam.distance,
                         );
                         fly.start_focus = cam.focus;
                         fly.start_distance = cam.distance;
@@ -755,7 +826,10 @@ fn draw_tree_row(
                 .with_tooltip("Toggle visibility"),
         );
         if let Some(c) = swatch {
-            slot_buf.push(TreeIconSlot::new(TreeIconKind::Color(c), &mut color_sentinel));
+            slot_buf.push(TreeIconSlot::new(
+                TreeIconKind::Color(c),
+                &mut color_sentinel,
+            ));
         }
 
         if has_children {
@@ -1110,8 +1184,7 @@ fn draw_variants_panel(
                                     |ui| {
                                         for set in sets {
                                             let key = (prim_path.clone(), set.name.clone());
-                                            let authored =
-                                                set.selection.as_deref().unwrap_or("");
+                                            let authored = set.selection.as_deref().unwrap_or("");
                                             let current = loader_tuning
                                                 .variants
                                                 .get(&key)
@@ -1140,8 +1213,7 @@ fn draw_variants_panel(
                                                     accent_col,
                                                 );
                                                 if r.changed() {
-                                                    let picked =
-                                                        set.options[selected_idx].clone();
+                                                    let picked = set.options[selected_idx].clone();
                                                     if picked != current {
                                                         loader_tuning
                                                             .variants
@@ -1253,8 +1325,7 @@ fn draw_cameras_panel(
                         }
                     }
                     if let Some(idx) = to_jump
-                        && let (Ok(cam), Some(bm)) =
-                            (cameras.single(), bookmarks.items.get(idx))
+                        && let (Ok(cam), Some(bm)) = (cameras.single(), bookmarks.items.get(idx))
                     {
                         *camera_mount = CameraMount::Arcball;
                         fly.start_focus = cam.focus;
@@ -1402,10 +1473,7 @@ fn draw_materials_panel(
                 &format!("{} material(s)", entries.len()),
                 true,
                 |ui| {
-                    sub_caption(
-                        ui,
-                        "Edits update every mesh bound to that material.",
-                    );
+                    sub_caption(ui, "Edits update every mesh bound to that material.");
                 },
             );
             for (id, label) in &entries {
@@ -1454,9 +1522,7 @@ fn draw_materials_panel(
                         });
                         ui.horizontal(|ui| {
                             ui.label("Metallic:");
-                            ui.add(
-                                egui::Slider::new(&mut mat.metallic, 0.0..=1.0).step_by(0.01),
-                            );
+                            ui.add(egui::Slider::new(&mut mat.metallic, 0.0..=1.0).step_by(0.01));
                         });
                     },
                 );
@@ -1495,8 +1561,18 @@ fn draw_overlays_panel(
         accent_col,
         |pane| {
             pane.section("overlay_toggles", "World overlays", true, |ui| {
-                toggle(ui, "Ground grid (G)", &mut toggles.show_world_grid, accent_col);
-                toggle(ui, "World axes (X)", &mut toggles.show_world_axes, accent_col);
+                toggle(
+                    ui,
+                    "Ground grid (G)",
+                    &mut toggles.show_world_grid,
+                    accent_col,
+                );
+                toggle(
+                    ui,
+                    "World axes (X)",
+                    &mut toggles.show_world_axes,
+                    accent_col,
+                );
                 toggle(
                     ui,
                     "Prim markers (P)",
@@ -1504,8 +1580,16 @@ fn draw_overlays_panel(
                     accent_col,
                 );
                 let mut v = toggles.prim_marker_bias as f64;
-                if pretty_slider(ui, "Prim marker bias", &mut v, 0.0..=5.0, 2, "×", accent_col)
-                    .changed()
+                if pretty_slider(
+                    ui,
+                    "Prim marker bias",
+                    &mut v,
+                    0.0..=5.0,
+                    2,
+                    "×",
+                    accent_col,
+                )
+                .changed()
                 {
                     toggles.prim_marker_bias = v as f32;
                 }
@@ -1532,16 +1616,8 @@ fn draw_overlays_panel(
             pane.section("overlay_render", "Render", true, |ui| {
                 toggle(ui, "Wireframe", &mut toggles.wireframe, accent_col);
                 let mut s = toggles.light_intensity_scale as f64;
-                if pretty_slider(
-                    ui,
-                    "Light intensity",
-                    &mut s,
-                    0.0..=5.0,
-                    2,
-                    "×",
-                    accent_col,
-                )
-                .changed()
+                if pretty_slider(ui, "Light intensity", &mut s, 0.0..=5.0, 2, "×", accent_col)
+                    .changed()
                 {
                     toggles.light_intensity_scale = s as f32;
                 }
@@ -1551,9 +1627,7 @@ fn draw_overlays_panel(
             pane.section("overlay_curves", "Curves (tubes)", true, |ui| {
                 sub_caption(ui, "Default radius used when widths aren't authored");
                 let mut r = loader_tuning.curves.default_radius as f64;
-                if pretty_slider(ui, "Radius", &mut r, 0.001..=0.2, 3, " m", accent_col)
-                    .changed()
-                {
+                if pretty_slider(ui, "Radius", &mut r, 0.001..=0.2, 3, " m", accent_col).changed() {
                     loader_tuning.curves.default_radius = r as f32;
                 }
                 let mut seg = loader_tuning.curves.ring_segments as f64;
@@ -1616,7 +1690,11 @@ fn draw_timeline_panel(
                 );
                 ui.add_space(style::space::BLOCK);
 
-                let play_label = if clock.playing { "⏸  Pause" } else { "▶  Play" };
+                let play_label = if clock.playing {
+                    "⏸  Pause"
+                } else {
+                    "▶  Play"
+                };
                 if wide_button(ui, play_label, accent_col).clicked() {
                     clock.playing = !clock.playing;
                 }
@@ -1873,4 +1951,3 @@ fn draw_palette_panel(
     }
     palette.0.open = false;
 }
-

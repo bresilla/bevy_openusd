@@ -64,8 +64,7 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 fn de_boor_endpoints_match_clamped_cvs() {
     use usd_schema::geom::read_nurbs_curves;
 
-    let stage = openusd::Stage::open("tests/stages/nurbs_curves.usda")
-        .expect("stage should open");
+    let stage = openusd::Stage::open("tests/stages/nurbs_curves.usda").expect("stage should open");
 
     let nurbs = read_nurbs_curves(
         &stage,

@@ -2,9 +2,9 @@
 //! using `usd_rapier::bodies::build_rigid_body` for the actual
 //! Rapier construction. This file is the Bevy ECS adapter only.
 
-use bevy::prelude::*;
 use crate::markers::{UsdMass, UsdRigidBody};
-use usd_rapier::bodies::{build_rigid_body, RigidBodyOpinion};
+use bevy::prelude::*;
+use usd_rapier::bodies::{RigidBodyOpinion, build_rigid_body};
 
 use super::convert::{quat_to_d, vec3_to_d};
 use super::world::PhysicsWorld;
@@ -18,7 +18,12 @@ pub fn convert_rigid_bodies(
     mut commands: Commands,
     mut world: ResMut<PhysicsWorld>,
     bodies: Query<
-        (Entity, &UsdRigidBody, Option<&UsdMass>, Option<&GlobalTransform>),
+        (
+            Entity,
+            &UsdRigidBody,
+            Option<&UsdMass>,
+            Option<&GlobalTransform>,
+        ),
         (Added<UsdRigidBody>, Without<BodyAttached>),
     >,
 ) {

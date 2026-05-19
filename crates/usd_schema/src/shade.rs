@@ -497,9 +497,7 @@ pub fn read_preview_material(
     // For MDL connections the actual MDL function declared via
     // `info:mdl:sourceAsset[:subIdentifier]` still drives which
     // OmniPBR variant we pick (OmniPBR vs OmniSurface vs …).
-    let mdl_id = mdl_subid
-        .as_deref()
-        .or(mdl_basename.as_deref());
+    let mdl_id = mdl_subid.as_deref().or(mdl_basename.as_deref());
     // Pick the input vocabulary by which output dialect carried the
     // shader connection. Some Omniverse-authored shaders wire an MDL
     // surface to a UsdPreviewSurface-id shader whose actual inputs
@@ -702,18 +700,8 @@ const PREVIEW_CHANNELS: &[(&str, ColourSetter, ScalarSetter, TextureSetter)] = &
 /// silently. The mapped subset is what the open-standard viewers all
 /// agree on.
 const MATERIALX_STD_SURFACE_CHANNELS: &[(&str, ColourSetter, ScalarSetter, TextureSetter)] = &[
-    (
-        "base_color",
-        set_diffuse_c,
-        set_diffuse_s,
-        set_diffuse_tex,
-    ),
-    (
-        "metalness",
-        set_metal_c,
-        set_metal_s,
-        set_metal_tex,
-    ),
+    ("base_color", set_diffuse_c, set_diffuse_s, set_diffuse_tex),
+    ("metalness", set_metal_c, set_metal_s, set_metal_tex),
     (
         "specular_roughness",
         set_rough_c,
@@ -761,32 +749,112 @@ fn set_opacity_mtlx_c(o: &mut ReadPreviewMaterial, c: [f32; 3]) {
 /// | `opacity_texture`                  | opacity texture    |
 /// | `normalmap_texture`                | normal texture     |
 const OMNIPBR_CHANNELS: &[(&str, ColourSetter, ScalarSetter, TextureSetter)] = &[
-    ("diffuse_color_constant", set_diffuse_c, set_diffuse_s, set_diffuse_tex),
-    ("diffuse_texture", set_diffuse_c, set_diffuse_s, set_diffuse_tex),
-    ("reflection_roughness_constant", set_rough_c, set_rough_s, set_rough_tex),
-    ("reflectionroughness_texture", set_rough_c, set_rough_s, set_rough_tex),
+    (
+        "diffuse_color_constant",
+        set_diffuse_c,
+        set_diffuse_s,
+        set_diffuse_tex,
+    ),
+    (
+        "diffuse_texture",
+        set_diffuse_c,
+        set_diffuse_s,
+        set_diffuse_tex,
+    ),
+    (
+        "reflection_roughness_constant",
+        set_rough_c,
+        set_rough_s,
+        set_rough_tex,
+    ),
+    (
+        "reflectionroughness_texture",
+        set_rough_c,
+        set_rough_s,
+        set_rough_tex,
+    ),
     ("metallic_constant", set_metal_c, set_metal_s, set_metal_tex),
     ("metallic_texture", set_metal_c, set_metal_s, set_metal_tex),
-    ("emissive_color", set_emissive_c, set_emissive_s, set_emissive_tex),
-    ("emissive_color_texture", set_emissive_c, set_emissive_s, set_emissive_tex),
-    ("opacity_constant", set_opacity_c, set_opacity_s, set_opacity_tex),
-    ("opacity_texture", set_opacity_c, set_opacity_s, set_opacity_tex),
-    ("normalmap_texture", set_normal_c, set_normal_s, set_normal_tex),
+    (
+        "emissive_color",
+        set_emissive_c,
+        set_emissive_s,
+        set_emissive_tex,
+    ),
+    (
+        "emissive_color_texture",
+        set_emissive_c,
+        set_emissive_s,
+        set_emissive_tex,
+    ),
+    (
+        "opacity_constant",
+        set_opacity_c,
+        set_opacity_s,
+        set_opacity_tex,
+    ),
+    (
+        "opacity_texture",
+        set_opacity_c,
+        set_opacity_s,
+        set_opacity_tex,
+    ),
+    (
+        "normalmap_texture",
+        set_normal_c,
+        set_normal_s,
+        set_normal_tex,
+    ),
 ];
 
 /// Omniverse `OmniSurface` (and `OmniSurfaceLite`) shader inputs.
 /// Different vocabulary than OmniPBR — closer to MaterialX
 /// standard_surface but with `_image` suffixes for textures.
 const OMNISURFACE_CHANNELS: &[(&str, ColourSetter, ScalarSetter, TextureSetter)] = &[
-    ("diffuse_reflection_color", set_diffuse_c, set_diffuse_s, set_diffuse_tex),
-    ("diffuse_reflection_color_image", set_diffuse_c, set_diffuse_s, set_diffuse_tex),
-    ("geometry_normal_image", set_normal_c, set_normal_s, set_normal_tex),
-    ("geometry_opacity_image", set_opacity_c, set_opacity_s, set_opacity_tex),
-    ("geometry_opacity", set_opacity_c, set_opacity_s, set_opacity_tex),
+    (
+        "diffuse_reflection_color",
+        set_diffuse_c,
+        set_diffuse_s,
+        set_diffuse_tex,
+    ),
+    (
+        "diffuse_reflection_color_image",
+        set_diffuse_c,
+        set_diffuse_s,
+        set_diffuse_tex,
+    ),
+    (
+        "geometry_normal_image",
+        set_normal_c,
+        set_normal_s,
+        set_normal_tex,
+    ),
+    (
+        "geometry_opacity_image",
+        set_opacity_c,
+        set_opacity_s,
+        set_opacity_tex,
+    ),
+    (
+        "geometry_opacity",
+        set_opacity_c,
+        set_opacity_s,
+        set_opacity_tex,
+    ),
     ("roughness", set_rough_c, set_rough_s, set_rough_tex),
     ("metalness", set_metal_c, set_metal_s, set_metal_tex),
-    ("emission_color", set_emissive_c, set_emissive_s, set_emissive_tex),
-    ("emission_color_image", set_emissive_c, set_emissive_s, set_emissive_tex),
+    (
+        "emission_color",
+        set_emissive_c,
+        set_emissive_s,
+        set_emissive_tex,
+    ),
+    (
+        "emission_color_image",
+        set_emissive_c,
+        set_emissive_s,
+        set_emissive_tex,
+    ),
 ];
 
 /// Authored value as resolved through the interface pattern.

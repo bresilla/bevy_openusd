@@ -14,7 +14,6 @@ use bevy::math::Vec3;
 use bevy::mesh::{Indices, Mesh, Meshable, PrimitiveTopology, VertexAttributeValues};
 use usd_schema::geom::{Axis, Interpolation, MeshPrimvar, Orientation, ReadCylinder, ReadMesh};
 
-
 /// Per-USD-point skinning data, normalised to Bevy's fixed 4-influences-
 /// per-vertex layout. Built from a `ReadSkelBinding` via
 /// [`skin_attrs_from_binding`]; passed into [`mesh_from_usd_subset`]
@@ -70,9 +69,7 @@ pub fn skin_attrs_from_binding(
                 }
             })
             .collect();
-        entries.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
-        });
+        entries.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         let take = entries.len().min(4);
         let mut sum = 0.0f32;
         for k in 0..take {
@@ -174,7 +171,8 @@ pub fn mesh_from_usd_subset_with_skin(
             for face_verts in &read.face_vertex_counts {
                 let n = *face_verts as usize;
                 let mut consumed = 0usize;
-                let _ = n; let _ = consumed; // silence unused if loop empty
+                let _ = n;
+                let _ = consumed; // silence unused if loop empty
                 for k in 0..(*face_verts as usize) {
                     let _ = k;
                 }
@@ -276,16 +274,12 @@ fn build_indexed(
     // per-point for polygonal meshes (USD spec) so we ride the same
     // path as `Vertex` — silently dropping it would force generated
     // smooth normals over authored ones.
-    let normals = read.normals.as_ref().and_then(|p| {
-        match p.interpolation {
-            Interpolation::Vertex | Interpolation::Varying => {
-                Some(expand_vertex_primvar(&p, positions.len(), [0.0, 1.0, 0.0]))
-            }
-            Interpolation::Constant if !p.values.is_empty() => {
-                Some(vec![p.values[0]; positions.len()])
-            }
-            _ => None,
+    let normals = read.normals.as_ref().and_then(|p| match p.interpolation {
+        Interpolation::Vertex | Interpolation::Varying => {
+            Some(expand_vertex_primvar(&p, positions.len(), [0.0, 1.0, 0.0]))
         }
+        Interpolation::Constant if !p.values.is_empty() => Some(vec![p.values[0]; positions.len()]),
+        _ => None,
     });
 
     let uvs = read
@@ -315,10 +309,7 @@ fn build_indexed(
 /// they're vertex- or constant-interpolated (faceVarying/uniform force the
 /// expanded path). Returns `None` when there's nothing to emit so the
 /// caller can skip writing the attribute at all.
-fn build_vertex_colors_indexed(
-    read: &ReadMesh,
-    vertex_count: usize,
-) -> Option<Vec<[f32; 4]>> {
+fn build_vertex_colors_indexed(read: &ReadMesh, vertex_count: usize) -> Option<Vec<[f32; 4]>> {
     if read.display_color.is_none() && read.display_opacity.is_none() {
         return None;
     }
@@ -778,7 +769,12 @@ fn ear_clip_into(
     if normal.length_squared() < 1e-20 {
         // Degenerate polygon — fall back to fan.
         for k in 1..(n - 1) {
-            emit(out, indices[0] as u32, indices[k] as u32, indices[k + 1] as u32);
+            emit(
+                out,
+                indices[0] as u32,
+                indices[k] as u32,
+                indices[k + 1] as u32,
+            );
         }
         return;
     }
@@ -848,7 +844,12 @@ fn ear_clip_into(
                 continue;
             }
             // Emit and clip.
-            emit(out, indices[i_prev] as u32, indices[i_cur] as u32, indices[i_next] as u32);
+            emit(
+                out,
+                indices[i_prev] as u32,
+                indices[i_cur] as u32,
+                indices[i_next] as u32,
+            );
             remaining.remove(i);
             clipped = true;
             break;
@@ -859,12 +860,22 @@ fn ear_clip_into(
         }
     }
     if remaining.len() == 3 {
-        emit(out, indices[remaining[0]] as u32, indices[remaining[1]] as u32, indices[remaining[2]] as u32);
+        emit(
+            out,
+            indices[remaining[0]] as u32,
+            indices[remaining[1]] as u32,
+            indices[remaining[2]] as u32,
+        );
     } else if remaining.len() > 3 {
         // Fallback: fan over what's left.
         let r0 = remaining[0];
         for k in 1..(remaining.len() - 1) {
-            emit(out, indices[r0] as u32, indices[remaining[k]] as u32, indices[remaining[k + 1]] as u32);
+            emit(
+                out,
+                indices[r0] as u32,
+                indices[remaining[k]] as u32,
+                indices[remaining[k + 1]] as u32,
+            );
         }
     }
 }

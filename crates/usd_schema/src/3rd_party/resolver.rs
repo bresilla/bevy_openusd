@@ -52,11 +52,13 @@ impl StripMetadataResolver {
         if !foreign.is_absolute() {
             return None;
         }
-        let comps: Vec<&std::ffi::OsStr> =
-            foreign.components().filter_map(|c| match c {
+        let comps: Vec<&std::ffi::OsStr> = foreign
+            .components()
+            .filter_map(|c| match c {
                 std::path::Component::Normal(n) => Some(n),
                 _ => None,
-            }).collect();
+            })
+            .collect();
         // Walk from the project root forward, looking for the longest
         // suffix of `foreign` that, joined onto one of our search paths
         // (or a parent of one), points at an existing file.

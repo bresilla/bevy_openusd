@@ -40,7 +40,9 @@ fn load_and_spawn(app: &mut App, asset_name: &str) {
     for _ in 0..200 {
         app.update();
         if matches!(
-            app.world().resource::<AssetServer>().get_load_state(&handle),
+            app.world()
+                .resource::<AssetServer>()
+                .get_load_state(&handle),
             Some(LoadState::Loaded)
         ) {
             break;

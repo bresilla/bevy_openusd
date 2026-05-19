@@ -2,8 +2,8 @@
 //! and SkelRoot, dump joint count + first few joint paths so we can see
 //! whether our wrapper exposes the rig.
 
-use openusd::sdf::Path;
 use bevy::math::Mat4;
+use openusd::sdf::Path;
 
 fn main() {
     let path = std::env::args()
@@ -48,14 +48,27 @@ fn main() {
                     let bind_m = Mat4::from_cols_array(
                         &s.bind_transforms.get(i).copied().unwrap_or(IDENTITY),
                     );
-                    let diff = (rest_world[i].to_cols_array_2d().iter().zip(
-                        bind_m.to_cols_array_2d().iter(),
-                    )).map(|(a, b)| {
-                        a.iter().zip(b.iter()).map(|(x, y)| (x - y).powi(2)).sum::<f32>()
-                    }).sum::<f32>().sqrt();
-                    if diff > max_diff { max_diff = diff; worst = i; }
+                    let diff = (rest_world[i]
+                        .to_cols_array_2d()
+                        .iter()
+                        .zip(bind_m.to_cols_array_2d().iter()))
+                    .map(|(a, b)| {
+                        a.iter()
+                            .zip(b.iter())
+                            .map(|(x, y)| (x - y).powi(2))
+                            .sum::<f32>()
+                    })
+                    .sum::<f32>()
+                    .sqrt();
+                    if diff > max_diff {
+                        max_diff = diff;
+                        worst = i;
+                    }
                 }
-                println!("  max rest_world vs bind matrix diff: {max_diff:.6} at joint [{worst}] {}", s.joints[worst]);
+                println!(
+                    "  max rest_world vs bind matrix diff: {max_diff:.6} at joint [{worst}] {}",
+                    s.joints[worst]
+                );
 
                 // Check decompose-recompose round-trip on every joint.
                 let mut decomp_max = 0.0f32;
@@ -66,9 +79,13 @@ fn main() {
                     );
                     let (s_, r_, t_) = bind_m.to_scale_rotation_translation();
                     let recomposed = Mat4::from_scale_rotation_translation(s_, r_, t_);
-                    let diff = (bind_m.to_cols_array().iter().zip(
-                        recomposed.to_cols_array().iter(),
-                    )).map(|(a, b)| (a - b).powi(2)).sum::<f32>().sqrt();
+                    let diff = (bind_m
+                        .to_cols_array()
+                        .iter()
+                        .zip(recomposed.to_cols_array().iter()))
+                    .map(|(a, b)| (a - b).powi(2))
+                    .sum::<f32>()
+                    .sqrt();
                     if diff > decomp_max {
                         decomp_max = diff;
                         decomp_worst = i;
@@ -80,7 +97,10 @@ fn main() {
                 );
                 if decomp_max > 1e-3 {
                     let bind_m = Mat4::from_cols_array(
-                        &s.bind_transforms.get(decomp_worst).copied().unwrap_or(IDENTITY),
+                        &s.bind_transforms
+                            .get(decomp_worst)
+                            .copied()
+                            .unwrap_or(IDENTITY),
                     );
                     let det = bind_m.determinant();
                     println!("    determinant: {det:.6}");
@@ -91,7 +111,10 @@ fn main() {
                     let bind_m = Mat4::from_cols_array(
                         &s.bind_transforms.get(worst).copied().unwrap_or(IDENTITY),
                     );
-                    println!("  worst rest_world: {:?}", rest_world[worst].to_cols_array());
+                    println!(
+                        "  worst rest_world: {:?}",
+                        rest_world[worst].to_cols_array()
+                    );
                     println!("  worst bind:       {:?}", bind_m.to_cols_array());
                 }
             }
@@ -129,8 +152,17 @@ fn main() {
     println!("== skinned meshes ==");
     let mut count_skinned = 0;
     let mut count_with_subsets = 0;
-    fn walk_skin(stage: &openusd::Stage, prim: &Path, count_skinned: &mut usize, count_with_subsets: &mut usize) {
-        let tn: String = stage.field::<String>(prim.clone(), "typeName").ok().flatten().unwrap_or_default();
+    fn walk_skin(
+        stage: &openusd::Stage,
+        prim: &Path,
+        count_skinned: &mut usize,
+        count_with_subsets: &mut usize,
+    ) {
+        let tn: String = stage
+            .field::<String>(prim.clone(), "typeName")
+            .ok()
+            .flatten()
+            .unwrap_or_default();
         if tn == "Mesh" {
             if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(stage, prim) {
                 *count_skinned += 1;
@@ -191,8 +223,7 @@ fn main() {
     // ratio.
     println!();
     println!("== anim vs bind translation scale check ==");
-    let walk_path =
-        "assets/UsdSkelExamples/HumanFemale/HumanFemale.walk.usd";
+    let walk_path = "assets/UsdSkelExamples/HumanFemale/HumanFemale.walk.usd";
     if let Ok(walk_text) = std::fs::read_to_string(walk_path) {
         let anims = usd_schema::skel_anim_text::scan_skel_animations(&walk_text);
         if let Some(anim) = anims.first() {
@@ -230,9 +261,7 @@ fn main() {
                 }
             }
             if let (Some(ai), Some(skel)) = (anim_hips, skel_hips_rest) {
-                let skel_hips_local = bevy::math::Mat4::from_cols_array(
-                    &skel.rest_transforms[0],
-                );
+                let skel_hips_local = bevy::math::Mat4::from_cols_array(&skel.rest_transforms[0]);
                 let (_, _, sk_t) = skel_hips_local.to_scale_rotation_translation();
                 let anim_first = anim.translations.iter().next();
                 if let Some((_, vals)) = anim_first {
@@ -249,7 +278,9 @@ fn main() {
                         "  Hips skel rest_local_rot = {sk_r:?} | anim rotation_at_first (wxyz) = {ar:?} → quat {aq:?}"
                     );
                     let dot = sk_r.dot(aq).abs();
-                    println!("  Hips dot(rest_rot, anim_rot) = {dot:.4} (1.0 = same; far from 1 = unit/order mismatch)");
+                    println!(
+                        "  Hips dot(rest_rot, anim_rot) = {dot:.4} (1.0 = same; far from 1 = unit/order mismatch)"
+                    );
                 }
                 if let Some((_, sc_vals)) = anim.scales.iter().next() {
                     let ascale = sc_vals[ai];
@@ -265,11 +296,15 @@ fn main() {
     // Identify which anim-order joints the nail and shoe bindings reach.
     println!();
     println!("== anim-order joint lookup ==");
-    if let Ok(walk_text) = std::fs::read_to_string("assets/UsdSkelExamples/HumanFemale/HumanFemale.walk.usd") {
+    if let Ok(walk_text) =
+        std::fs::read_to_string("assets/UsdSkelExamples/HumanFemale/HumanFemale.walk.usd")
+    {
         let anims = usd_schema::skel_anim_text::scan_skel_animations(&walk_text);
         if let Some(a) = anims.first() {
             println!("anim joint count: {}", a.joints.len());
-            for ix in [55, 56, 57, 58, 59, 60, 100, 101, 102, 103, 104, 105, 106, 107, 108] {
+            for ix in [
+                55, 56, 57, 58, 59, 60, 100, 101, 102, 103, 104, 105, 106, 107, 108,
+            ] {
                 if ix < a.joints.len() {
                     println!("  [{ix}] {}", a.joints[ix]);
                 }
@@ -302,17 +337,26 @@ fn main() {
                 let mut mx = [f32::NEG_INFINITY; 3];
                 for p in &m.points {
                     for i in 0..3 {
-                        if p[i] < mn[i] { mn[i] = p[i]; }
-                        if p[i] > mx[i] { mx[i] = p[i]; }
+                        if p[i] < mn[i] {
+                            mn[i] = p[i];
+                        }
+                        if p[i] > mx[i] {
+                            mx[i] = p[i];
+                        }
                     }
                 }
-                for i in 0..3 { center[i] = (mn[i] + mx[i]) * 0.5; }
+                for i in 0..3 {
+                    center[i] = (mn[i] + mx[i]) * 0.5;
+                }
             }
             println!(
                 "  {mp}\n    points center=({:.1}, {:.1}, {:.1})\n    per_vert={} idx_range={}..{} distinct={:?}",
-                center[0], center[1], center[2],
+                center[0],
+                center[1],
+                center[2],
                 b.elements_per_vertex,
-                min_idx, max_idx,
+                min_idx,
+                max_idx,
                 distinct.iter().take(8).copied().collect::<Vec<_>>(),
             );
         }
@@ -384,7 +428,8 @@ fn main() {
     println!();
     println!("== shoe ancestor xforms ==");
     let mut cur =
-        openusd::sdf::Path::new("/Skel/Geometry/ShoesHumanFlats/Geom/LShoe/Body/ShoeBody_sbdv").unwrap();
+        openusd::sdf::Path::new("/Skel/Geometry/ShoesHumanFlats/Geom/LShoe/Body/ShoeBody_sbdv")
+            .unwrap();
     loop {
         let order_attr = cur.append_property("xformOpOrder").unwrap();
         let order = stage
@@ -515,7 +560,11 @@ fn main() {
         bs_max_offsets: &mut usize,
         printed_examples: &mut usize,
     ) {
-        let tn = stage.field::<String>(prim.clone(), "typeName").ok().flatten().unwrap_or_default();
+        let tn = stage
+            .field::<String>(prim.clone(), "typeName")
+            .ok()
+            .flatten()
+            .unwrap_or_default();
         if tn == "Mesh" {
             if let Ok(Some(b)) = usd_schema::skel::read_skel_binding(stage, prim) {
                 if !b.blend_shape_targets.is_empty() {
@@ -551,13 +600,33 @@ fn main() {
         }
         for c in stage.prim_children(prim.clone()).unwrap_or_default() {
             if let Ok(cp) = prim.append_path(c.as_str()) {
-                probe_bs(stage, &cp, bs_meshes, bs_total, bs_max_per_mesh, bs_sparse, bs_dense, bs_max_offsets, printed_examples);
+                probe_bs(
+                    stage,
+                    &cp,
+                    bs_meshes,
+                    bs_total,
+                    bs_max_per_mesh,
+                    bs_sparse,
+                    bs_dense,
+                    bs_max_offsets,
+                    printed_examples,
+                );
             }
         }
     }
     for n in stage.root_prims().unwrap_or_default() {
         if let Ok(p) = openusd::sdf::Path::abs_root().append_path(n.as_str()) {
-            probe_bs(&stage, &p, &mut bs_meshes, &mut bs_total, &mut bs_max_per_mesh, &mut bs_sparse, &mut bs_dense, &mut bs_max_offsets, &mut printed_examples);
+            probe_bs(
+                &stage,
+                &p,
+                &mut bs_meshes,
+                &mut bs_total,
+                &mut bs_max_per_mesh,
+                &mut bs_sparse,
+                &mut bs_dense,
+                &mut bs_max_offsets,
+                &mut printed_examples,
+            );
         }
     }
     println!(
@@ -581,8 +650,12 @@ fn main() {
             let mut mx = [f32::NEG_INFINITY; 3];
             for p in &m.points {
                 for i in 0..3 {
-                    if p[i] < mn[i] { mn[i] = p[i]; }
-                    if p[i] > mx[i] { mx[i] = p[i]; }
+                    if p[i] < mn[i] {
+                        mn[i] = p[i];
+                    }
+                    if p[i] > mx[i] {
+                        mx[i] = p[i];
+                    }
                 }
             }
             let cx = (mn[0] + mx[0]) * 0.5;
@@ -611,7 +684,9 @@ fn main() {
             .flatten()
             .unwrap_or_default();
         if tn == "Mesh" {
-            let binding = usd_schema::skel::read_skel_binding(stage, prim).ok().flatten();
+            let binding = usd_schema::skel::read_skel_binding(stage, prim)
+                .ok()
+                .flatten();
             let pts = usd_schema::geom::read_mesh(stage, prim)
                 .ok()
                 .flatten()
@@ -650,7 +725,10 @@ fn main() {
             .collect::<Vec<_>>()
             .join("\n"),
     );
-    println!("total mesh prims: {total}, with SkelBindingAPI: {with_binding}, without: {}", total - with_binding);
+    println!(
+        "total mesh prims: {total}, with SkelBindingAPI: {with_binding}, without: {}",
+        total - with_binding
+    );
     println!("first 8 unbound meshes:");
     for (path, b, pts) in all.iter().filter(|(_, b, _)| b.is_none()).take(8) {
         println!("  {} ({pts} pts) {b:?}", path.as_str());
@@ -700,9 +778,14 @@ fn main() {
         "/Skel/Geometry/HumanFemale/Geom/Body/Nails/LFingerNails/ThumbNail_sbdv",
     ] {
         let prim = Path::new(mp).unwrap();
-        let attr = prim.append_property("primvars:skel:geomBindTransform").unwrap();
+        let attr = prim
+            .append_property("primvars:skel:geomBindTransform")
+            .unwrap();
         let v = stage.field::<Value>(attr, "default").ok().flatten();
-        println!("  {mp} → primvars:skel:geomBindTransform = {:?}", v.is_some());
+        println!(
+            "  {mp} → primvars:skel:geomBindTransform = {:?}",
+            v.is_some()
+        );
         if let Some(val) = v {
             match val {
                 Value::Matrix4d(m) => {

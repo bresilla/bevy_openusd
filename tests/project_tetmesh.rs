@@ -71,8 +71,7 @@ fn triangle_count(mesh: &Mesh) -> usize {
 #[test]
 fn boundary_face_count_matches_topology() {
     use usd_schema::geom::read_tetmesh;
-    let stage = openusd::Stage::open("tests/stages/tetmesh.usda")
-        .expect("stage should open");
+    let stage = openusd::Stage::open("tests/stages/tetmesh.usda").expect("stage should open");
 
     // A single tet has exactly 4 boundary faces.
     let single = read_tetmesh(

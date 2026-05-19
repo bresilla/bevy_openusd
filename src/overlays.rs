@@ -56,7 +56,10 @@ pub struct OriginalLightIntensity(pub f32);
 
 fn capture_original_light_levels(
     mut cmds: Commands,
-    dir: Query<(Entity, &DirectionalLight), (Added<DirectionalLight>, Without<OriginalIlluminance>)>,
+    dir: Query<
+        (Entity, &DirectionalLight),
+        (Added<DirectionalLight>, Without<OriginalIlluminance>),
+    >,
     pt: Query<(Entity, &PointLight), (Added<PointLight>, Without<OriginalLightIntensity>)>,
     sp: Query<(Entity, &SpotLight), (Added<SpotLight>, Without<OriginalLightIntensity>)>,
 ) {
@@ -97,7 +100,6 @@ fn apply_wireframe_toggle(
         cfg.global = toggles.wireframe;
     }
 }
-
 
 /// Persistent overlay state, mutated by the Overlays panel + keyboard.
 #[derive(Resource, Debug, Clone)]
@@ -239,9 +241,21 @@ fn compute_extent(
             let half = Vec3::from(aabb.half_extents);
             for i in 0..8 {
                 let local = Vec3::new(
-                    if i & 1 == 0 { center.x - half.x } else { center.x + half.x },
-                    if i & 2 == 0 { center.y - half.y } else { center.y + half.y },
-                    if i & 4 == 0 { center.z - half.z } else { center.z + half.z },
+                    if i & 1 == 0 {
+                        center.x - half.x
+                    } else {
+                        center.x + half.x
+                    },
+                    if i & 2 == 0 {
+                        center.y - half.y
+                    } else {
+                        center.y + half.y
+                    },
+                    if i & 4 == 0 {
+                        center.z - half.z
+                    } else {
+                        center.z + half.z
+                    },
                 );
                 let w = m.transform_point3(local);
                 min = min.min(w);
@@ -258,4 +272,3 @@ fn compute_extent(
     }
     *extent = SceneExtent { min, max, count };
 }
-

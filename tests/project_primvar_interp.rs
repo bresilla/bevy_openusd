@@ -4,12 +4,11 @@
 //! with the expected per-vertex stride/values.
 
 use openusd::sdf::Path;
-use usd_schema::geom::{read_mesh, Interpolation};
+use usd_schema::geom::{Interpolation, read_mesh};
 
 #[test]
 fn reads_all_five_primvar_interpolations() {
-    let stage = openusd::Stage::open("tests/stages/primvar_interp.usda")
-        .expect("fixture parses");
+    let stage = openusd::Stage::open("tests/stages/primvar_interp.usda").expect("fixture parses");
 
     // Check each authored mode round-trips through ReadMesh.
     let cases = [
@@ -47,13 +46,12 @@ fn reads_all_five_primvar_interpolations() {
 
 #[test]
 fn loader_materialises_all_five_into_bevy_mesh_colors() {
-    use bevy::mesh::{Mesh, PrimitiveTopology, VertexAttributeValues};
     use bevy::asset::RenderAssetUsages;
+    use bevy::mesh::{Mesh, PrimitiveTopology, VertexAttributeValues};
 
     // Run the same USDA through `mesh_from_usd` (no Bevy asset
     // infrastructure needed — pure function).
-    let stage = openusd::Stage::open("tests/stages/primvar_interp.usda")
-        .expect("fixture parses");
+    let stage = openusd::Stage::open("tests/stages/primvar_interp.usda").expect("fixture parses");
 
     // Constant: same colour on every vertex.
     {

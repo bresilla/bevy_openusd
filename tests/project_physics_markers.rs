@@ -84,7 +84,10 @@ fn projection_emits_physics_marker_components() {
     );
 
     // /World/Base authors RigidBody + Mass + Collision.
-    assert!(world.get::<UsdRigidBody>(base_e).is_some(), "Base no UsdRigidBody");
+    assert!(
+        world.get::<UsdRigidBody>(base_e).is_some(),
+        "Base no UsdRigidBody"
+    );
     let base_mass = world.get::<UsdMass>(base_e).expect("Base no UsdMass");
     // physics.usda authors mass=2.5 with kilogramsPerUnit=1.0 so SI mass = 2.5 kg.
     assert!(
@@ -92,12 +95,24 @@ fn projection_emits_physics_marker_components() {
         "Base mass: expected 2.5, got {:?}",
         base_mass.mass
     );
-    assert!(world.get::<UsdCollider>(base_e).is_some(), "Base no UsdCollider");
+    assert!(
+        world.get::<UsdCollider>(base_e).is_some(),
+        "Base no UsdCollider"
+    );
 
     // /World/Arm authors RigidBody + Collision but NO Mass.
-    assert!(world.get::<UsdRigidBody>(arm_e).is_some(), "Arm no UsdRigidBody");
-    assert!(world.get::<UsdMass>(arm_e).is_none(), "Arm should not have UsdMass");
-    assert!(world.get::<UsdCollider>(arm_e).is_some(), "Arm no UsdCollider");
+    assert!(
+        world.get::<UsdRigidBody>(arm_e).is_some(),
+        "Arm no UsdRigidBody"
+    );
+    assert!(
+        world.get::<UsdMass>(arm_e).is_none(),
+        "Arm should not have UsdMass"
+    );
+    assert!(
+        world.get::<UsdCollider>(arm_e).is_some(),
+        "Arm no UsdCollider"
+    );
 
     // /World/Hinge → UsdPhysicsJoint with resolved body refs + Vec3::Z axis +
     // radian-converted built-in limits.
@@ -105,13 +120,29 @@ fn projection_emits_physics_marker_components() {
         .get::<UsdPhysicsJoint>(hinge_e)
         .expect("Hinge missing UsdPhysicsJoint");
     assert_eq!(joint.kind, UsdJointKind::Revolute);
-    assert_eq!(joint.body0, Some(base_e), "joint body0 should resolve to Base");
-    assert_eq!(joint.body1, Some(arm_e), "joint body1 should resolve to Arm");
+    assert_eq!(
+        joint.body0,
+        Some(base_e),
+        "joint body0 should resolve to Base"
+    );
+    assert_eq!(
+        joint.body1,
+        Some(arm_e),
+        "joint body1 should resolve to Arm"
+    );
     assert_eq!(joint.axis, Vec3::Z);
-    let (lo, hi) = joint.built_in_limit.expect("revolute limits should round-trip");
+    let (lo, hi) = joint
+        .built_in_limit
+        .expect("revolute limits should round-trip");
     // physics.usda authors -45° / +45°; markers store radians.
-    assert!((lo - (-PI / 4.0)).abs() < 1e-5, "lower: expected -π/4, got {lo}");
-    assert!((hi - (PI / 4.0)).abs() < 1e-5, "upper: expected π/4, got {hi}");
+    assert!(
+        (lo - (-PI / 4.0)).abs() < 1e-5,
+        "lower: expected -π/4, got {lo}"
+    );
+    assert!(
+        (hi - (PI / 4.0)).abs() < 1e-5,
+        "upper: expected π/4, got {hi}"
+    );
 
     println!(
         "physics markers OK: PhysicsScene + 2 RigidBody + 1 Mass + 2 Collider + 1 Joint (resolved body0/1)"

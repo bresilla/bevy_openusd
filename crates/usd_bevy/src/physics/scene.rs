@@ -1,9 +1,9 @@
 //! `UsdPhysicsScene` → `PhysicsWorld.gravity`. First scene wins;
 //! subsequent ones warn (Rapier currently runs one world).
 
+use crate::markers::UsdPhysicsScene;
 use bevy::math::DVec3;
 use bevy::prelude::*;
-use crate::markers::UsdPhysicsScene;
 
 use super::world::PhysicsWorld;
 
@@ -21,7 +21,10 @@ pub fn sync_gravity_from_usd_scene(
         }
         let g = scene.gravity_direction.normalize_or_zero() * scene.gravity_magnitude;
         world.gravity = DVec3::new(g.x as f64, g.y as f64, g.z as f64);
-        info!("RapierAdapter: gravity set to {:?} m/s² (from UsdPhysicsScene)", world.gravity);
+        info!(
+            "RapierAdapter: gravity set to {:?} m/s² (from UsdPhysicsScene)",
+            world.gravity
+        );
         *applied = true;
     }
 }

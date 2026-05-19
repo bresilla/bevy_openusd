@@ -112,7 +112,11 @@ pub fn tick_stage_time(
             // Prefer assets that have real animation content; only
             // fall back to "stage with authored timeline" if nothing
             // else is loaded yet. Either way we maximise duration.
-            let score = if has_real_anim { dur + 1_000_000.0 } else { dur };
+            let score = if has_real_anim {
+                dur + 1_000_000.0
+            } else {
+                dur
+            };
             if best.is_none_or(|(b, _)| score > b) {
                 best = Some((score, asset));
             }

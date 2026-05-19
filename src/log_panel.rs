@@ -9,9 +9,9 @@
 //! sits inside a Bevy `Resource` (`LoaderLog`) so the UI can read it
 //! every frame without going through the tracing API.
 
-use bevy::log::tracing::{self, field, Event, Level, Subscriber};
-use bevy::log::tracing_subscriber::{layer::Context, Layer};
 use bevy::log::BoxedLayer;
+use bevy::log::tracing::{self, Event, Level, Subscriber, field};
+use bevy::log::tracing_subscriber::{Layer, layer::Context};
 use bevy::prelude::*;
 use std::collections::VecDeque;
 use std::fmt;

@@ -70,10 +70,7 @@ pub fn read_clips(stage: &openusd::Stage, prim: &Path) -> Result<Vec<ReadClipSet
     Ok(out)
 }
 
-fn legacy_clip_set(
-    stage: &openusd::Stage,
-    prim: &Path,
-) -> Result<ReadClipSet> {
+fn legacy_clip_set(stage: &openusd::Stage, prim: &Path) -> Result<ReadClipSet> {
     let clip_prim_path = string_field(stage, prim, "clipPrimPath")?;
     let asset_paths = asset_path_vec_field(stage, prim, "clipAssetPaths")?;
     let active = f64_i64_pair_vec(stage, prim, "clipActive")?;
@@ -104,10 +101,7 @@ impl ReadClipSet {
 
 // ── helpers ────────────────────────────────────────────────────────
 
-fn clip_set_from_dict(
-    name: &str,
-    dict: &std::collections::HashMap<String, Value>,
-) -> ReadClipSet {
+fn clip_set_from_dict(name: &str, dict: &std::collections::HashMap<String, Value>) -> ReadClipSet {
     ReadClipSet {
         name: name.to_string(),
         clip_prim_path: dict_string(dict, "primPath"),
@@ -118,20 +112,14 @@ fn clip_set_from_dict(
     }
 }
 
-fn dict_string(
-    dict: &std::collections::HashMap<String, Value>,
-    key: &str,
-) -> Option<String> {
+fn dict_string(dict: &std::collections::HashMap<String, Value>, key: &str) -> Option<String> {
     match dict.get(key)? {
         Value::String(s) | Value::Token(s) | Value::AssetPath(s) => Some(s.clone()),
         _ => None,
     }
 }
 
-fn dict_asset_paths(
-    dict: &std::collections::HashMap<String, Value>,
-    key: &str,
-) -> Vec<String> {
+fn dict_asset_paths(dict: &std::collections::HashMap<String, Value>, key: &str) -> Vec<String> {
     match dict.get(key) {
         Some(Value::StringVec(v)) | Some(Value::TokenVec(v)) => v.clone(),
         _ => Vec::new(),
@@ -158,60 +146,50 @@ fn dict_pair_vec_f64_i64(
     }
 }
 
-fn string_field(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> Result<Option<String>> {
-    Ok(match stage
-        .field::<Value>(prim.clone(), name)
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::String(s)) | Some(Value::Token(s)) | Some(Value::AssetPath(s)) => {
-            Some(s)
-        }
-        _ => None,
-    })
+fn string_field(stage: &openusd::Stage, prim: &Path, name: &str) -> Result<Option<String>> {
+    Ok(
+        match stage
+            .field::<Value>(prim.clone(), name)
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::String(s)) | Some(Value::Token(s)) | Some(Value::AssetPath(s)) => Some(s),
+            _ => None,
+        },
+    )
 }
 
-fn asset_path_vec_field(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> Result<Vec<String>> {
-    Ok(match stage
-        .field::<Value>(prim.clone(), name)
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::StringVec(v)) | Some(Value::TokenVec(v)) => v,
-        _ => Vec::new(),
-    })
+fn asset_path_vec_field(stage: &openusd::Stage, prim: &Path, name: &str) -> Result<Vec<String>> {
+    Ok(
+        match stage
+            .field::<Value>(prim.clone(), name)
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::StringVec(v)) | Some(Value::TokenVec(v)) => v,
+            _ => Vec::new(),
+        },
+    )
 }
 
-fn f64_pair_vec(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> Result<Vec<(f64, f64)>> {
-    Ok(match stage
-        .field::<Value>(prim.clone(), name)
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::Vec2dVec(v)) => v.into_iter().map(|p| (p[0], p[1])).collect(),
-        _ => Vec::new(),
-    })
+fn f64_pair_vec(stage: &openusd::Stage, prim: &Path, name: &str) -> Result<Vec<(f64, f64)>> {
+    Ok(
+        match stage
+            .field::<Value>(prim.clone(), name)
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::Vec2dVec(v)) => v.into_iter().map(|p| (p[0], p[1])).collect(),
+            _ => Vec::new(),
+        },
+    )
 }
 
-fn f64_i64_pair_vec(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> Result<Vec<(f64, i64)>> {
-    Ok(match stage
-        .field::<Value>(prim.clone(), name)
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::Vec2dVec(v)) => v.into_iter().map(|p| (p[0], p[1] as i64)).collect(),
-        _ => Vec::new(),
-    })
+fn f64_i64_pair_vec(stage: &openusd::Stage, prim: &Path, name: &str) -> Result<Vec<(f64, i64)>> {
+    Ok(
+        match stage
+            .field::<Value>(prim.clone(), name)
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::Vec2dVec(v)) => v.into_iter().map(|p| (p[0], p[1] as i64)).collect(),
+            _ => Vec::new(),
+        },
+    )
 }

@@ -25,12 +25,22 @@ use rapier3d_f64::prelude::*;
 /// collider's pose) — so this module never touches Bevy / scene-tree
 /// info.
 pub enum ShapeInput {
-    Cube { size: f64 },
-    Sphere { radius: f64 },
-    Capsule { half: DVec3, radius: f64 },
+    Cube {
+        size: f64,
+    },
+    Sphere {
+        radius: f64,
+    },
+    Capsule {
+        half: DVec3,
+        radius: f64,
+    },
     /// Cylinder authored along Y (caller composes Y→authored-axis
     /// rotation into `local_pose` before calling).
-    Cylinder { half_height: f64, radius: f64 },
+    Cylinder {
+        half_height: f64,
+        radius: f64,
+    },
     /// Thin static ground / floor stand-in; UsdPhysics has no native
     /// plane shape, so we use a thin slab.
     Plane,
@@ -73,21 +83,23 @@ pub fn build_collider(
         ShapeInput::Capsule { half, radius } => {
             Some(ColliderBuilder::capsule_from_endpoints(-half, half, radius))
         }
-        ShapeInput::Cylinder { half_height, radius } => {
-            Some(ColliderBuilder::cylinder(half_height, radius))
-        }
+        ShapeInput::Cylinder {
+            half_height,
+            radius,
+        } => Some(ColliderBuilder::cylinder(half_height, radius)),
         ShapeInput::Plane => Some(ColliderBuilder::cuboid(50.0, 0.001, 50.0)),
-        ShapeInput::Mesh { vertices, indices, approx, is_dynamic } => {
-            build_mesh_collider(vertices, indices, approx, is_dynamic)
-        }
+        ShapeInput::Mesh {
+            vertices,
+            indices,
+            approx,
+            is_dynamic,
+        } => build_mesh_collider(vertices, indices, approx, is_dynamic),
     };
     let Some(mut builder) = builder_opt else {
         return Ok(None);
     };
 
-    builder = builder
-        .position(op.local_pose)
-        .user_data(op.user_data);
+    builder = builder.position(op.local_pose).user_data(op.user_data);
     if let Some(g) = op.collision_groups {
         builder = builder.collision_groups(g);
     }
@@ -118,9 +130,7 @@ fn build_mesh_collider(
         CollisionApprox::ConvexHull => ColliderBuilder::convex_hull(&vertices),
         CollisionApprox::ConvexDecomposition => {
             let Some(idx) = indices else {
-                log::warn!(
-                    "usd_rapier: convex decomposition needs indexed mesh; skipping"
-                );
+                log::warn!("usd_rapier: convex decomposition needs indexed mesh; skipping");
                 return None;
             };
             Some(ColliderBuilder::convex_decomposition(&vertices, &idx))

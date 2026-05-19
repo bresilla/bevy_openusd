@@ -29,7 +29,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use openusd::sdf::{path as sdf_path, Path as SdfPath, Value};
+use openusd::sdf::{Path as SdfPath, Value, path as sdf_path};
 
 use super::resolver::StripMetadataResolver;
 use super::strip_metadata::strip_unsupported_prim_metadata;
@@ -89,16 +89,13 @@ pub fn mdl_to_preview(input: &Path, output: &Path) -> Result<ConversionReport> {
         .extension()
         .and_then(|e| e.to_str())
         .unwrap_or(if is_usda { "usda" } else { "usd" });
-    let tmp = std::env::temp_dir().join(format!(
-        ".usd_schema_convert_{:016x}.{ext}",
-        {
-            use std::collections::hash_map::DefaultHasher;
-            use std::hash::{Hash, Hasher};
-            let mut h = DefaultHasher::new();
-            input.hash(&mut h);
-            h.finish()
-        }
-    ));
+    let tmp = std::env::temp_dir().join(format!(".usd_schema_convert_{:016x}.{ext}", {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut h = DefaultHasher::new();
+        input.hash(&mut h);
+        h.finish()
+    }));
     std::fs::write(&tmp, &clean)
         .with_context(|| format!("mdl_to_preview: tempfile write {}", tmp.display()))?;
 
@@ -129,7 +126,10 @@ pub fn mdl_to_preview(input: &Path, output: &Path) -> Result<ConversionReport> {
     let mut out = crate::Stage::new_sublayer();
     let sublayer_ref = format!(
         "./{}",
-        input.file_name().and_then(|n| n.to_str()).unwrap_or("source.usda")
+        input
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("source.usda")
     );
     out.add_sublayer(sublayer_ref);
     // Mirror the source's `defaultPrim` onto the override so the
@@ -240,11 +240,8 @@ fn scan_binding_targets_across_layers(
     // via sublayers, references, and payloads — this is the piece
     // `stage.layer_identifiers()` omits. Unresolved deps are swallowed
     // so conversion still produces output on partially-missing scenes.
-    let layers = match openusd::layer::collect_layers_with_handler(
-        &resolver,
-        root_str,
-        |_e| Ok(()),
-    ) {
+    let layers = match openusd::layer::collect_layers_with_handler(&resolver, root_str, |_e| Ok(()))
+    {
         Ok(v) => v,
         Err(e) => {
             eprintln!("usd_convert: collect_layers failed: {e}");

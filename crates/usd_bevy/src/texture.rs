@@ -118,8 +118,14 @@ pub fn load_metallic_roughness_packed(
     rough_path: &str,
     metal_path: &str,
 ) -> Option<Handle<Image>> {
-    let rough_clean = rough_path.strip_prefix("./").unwrap_or(rough_path).to_string();
-    let metal_clean = metal_path.strip_prefix("./").unwrap_or(metal_path).to_string();
+    let rough_clean = rough_path
+        .strip_prefix("./")
+        .unwrap_or(rough_path)
+        .to_string();
+    let metal_clean = metal_path
+        .strip_prefix("./")
+        .unwrap_or(metal_path)
+        .to_string();
 
     let cache_key = format!("MetalRoughPacked:r={rough_clean}|m={metal_clean}");
     if let Some(h) = ctx.embedded_textures.get(&cache_key) {
@@ -199,12 +205,16 @@ fn pack_metal_rough(rough_bytes: &[u8], metal_bytes: &[u8]) -> Option<Image> {
         (rw.max(mw), rh.max(mh))
     };
     let rough_rgba = if rough.dimensions() != (w, h) {
-        rough.resize_exact(w, h, image::imageops::FilterType::Triangle).to_rgba8()
+        rough
+            .resize_exact(w, h, image::imageops::FilterType::Triangle)
+            .to_rgba8()
     } else {
         rough.to_rgba8()
     };
     let metal_rgba = if metal.dimensions() != (w, h) {
-        metal.resize_exact(w, h, image::imageops::FilterType::Triangle).to_rgba8()
+        metal
+            .resize_exact(w, h, image::imageops::FilterType::Triangle)
+            .to_rgba8()
     } else {
         metal.to_rgba8()
     };

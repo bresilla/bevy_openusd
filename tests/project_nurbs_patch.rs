@@ -63,8 +63,7 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 #[test]
 fn corners_match_clamped_cvs() {
     use usd_schema::geom::read_nurbs_patch;
-    let stage =
-        openusd::Stage::open("tests/stages/nurbs_patch.usda").expect("stage should open");
+    let stage = openusd::Stage::open("tests/stages/nurbs_patch.usda").expect("stage should open");
     let p = read_nurbs_patch(
         &stage,
         &openusd::sdf::Path::new("/World/Arch").expect("valid path"),
@@ -104,9 +103,7 @@ fn corners_match_clamped_cvs() {
     let p_last = positions[32 * 32 - 1];
     let cv00 = p.points[0];
     let cv33 = p.points[p.points.len() - 1];
-    println!(
-        "  corners: first={p00:?} (CV[0,0]={cv00:?}), last={p_last:?} (CV[3,3]={cv33:?})"
-    );
+    println!("  corners: first={p00:?} (CV[0,0]={cv00:?}), last={p_last:?} (CV[3,3]={cv33:?})");
     assert!(near(p00, cv00), "first sample should match CV[0,0]");
     assert!(near(p_last, cv33), "last sample should match CV[3,3]");
 }

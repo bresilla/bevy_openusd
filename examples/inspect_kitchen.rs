@@ -7,22 +7,28 @@
 use openusd::sdf::{Path, Value};
 
 fn main() {
-    let path = std::env::args()
-        .nth(1)
-        .unwrap_or_else(|| "assets/Kitchen_set/assets/FramePicture/FramePicture.geom.usd".to_string());
+    let path = std::env::args().nth(1).unwrap_or_else(|| {
+        "assets/Kitchen_set/assets/FramePicture/FramePicture.geom.usd".to_string()
+    });
     let stage = openusd::Stage::open(&path).unwrap();
 
     fn walk(stage: &openusd::Stage, prim: &Path, depth: usize) {
         let indent = "  ".repeat(depth);
-        let type_name: Option<String> =
-            stage.field::<String>(prim.clone(), "typeName").ok().flatten();
+        let type_name: Option<String> = stage
+            .field::<String>(prim.clone(), "typeName")
+            .ok()
+            .flatten();
         // xformOpOrder
         let order_attr = prim.append_property("xformOpOrder").ok();
         let order: Option<Vec<String>> = order_attr.and_then(|a| {
-            stage.field::<Value>(a, "default").ok().flatten().and_then(|v| match v {
-                Value::TokenVec(t) | Value::StringVec(t) => Some(t),
-                _ => None,
-            })
+            stage
+                .field::<Value>(a, "default")
+                .ok()
+                .flatten()
+                .and_then(|v| match v {
+                    Value::TokenVec(t) | Value::StringVec(t) => Some(t),
+                    _ => None,
+                })
         });
         println!(
             "{}{} ({})",

@@ -105,10 +105,22 @@ pub enum UsdCollisionApprox {
 /// are the same prim in USD.
 #[derive(Reflect, Debug, Clone)]
 pub enum UsdColliderShape {
-    Cube { size: f32 },
-    Sphere { radius: f32 },
-    Capsule { radius: f32, height: f32, axis: Vec3 },
-    Cylinder { radius: f32, height: f32, axis: Vec3 },
+    Cube {
+        size: f32,
+    },
+    Sphere {
+        radius: f32,
+    },
+    Capsule {
+        radius: f32,
+        height: f32,
+        axis: Vec3,
+    },
+    Cylinder {
+        radius: f32,
+        height: f32,
+        axis: Vec3,
+    },
     /// Mesh-derived collider; geometry sits on the entity's `Mesh3d`.
     /// `approximation` on `UsdCollider` selects the engine-side build.
     Mesh,

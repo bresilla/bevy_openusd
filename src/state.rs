@@ -135,11 +135,13 @@ impl LoaderTuning {
     pub fn to_variant_selections(&self) -> Vec<usd_bevy::VariantSelection> {
         self.variants
             .iter()
-            .map(|((prim_path, set_name), option)| usd_bevy::VariantSelection {
-                prim_path: prim_path.clone(),
-                set_name: set_name.clone(),
-                option: option.clone(),
-            })
+            .map(
+                |((prim_path, set_name), option)| usd_bevy::VariantSelection {
+                    prim_path: prim_path.clone(),
+                    set_name: set_name.clone(),
+                    option: option.clone(),
+                },
+            )
             .collect()
     }
 }

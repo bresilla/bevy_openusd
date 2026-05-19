@@ -97,7 +97,10 @@ fn reads_render_settings_product_and_vars() {
     assert_eq!(s.path, "/Render/Primary");
     assert_eq!(s.resolution, Some([1920, 1080]));
     assert_eq!(s.pixel_aspect_ratio, Some(1.0));
-    assert_eq!(s.aspect_ratio_conform_policy.as_deref(), Some("expandAperture"));
+    assert_eq!(
+        s.aspect_ratio_conform_policy.as_deref(),
+        Some("expandAperture")
+    );
     assert_eq!(s.products, vec!["/Render/Products/Beauty".to_string()]);
     assert_eq!(
         s.included_purposes,

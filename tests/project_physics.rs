@@ -84,7 +84,10 @@ fn reads_physics_scene_bodies_and_joints() {
         asset.joints.len(),
     );
 
-    assert_eq!(asset.physics_scene_prims, vec!["/World/PhysicsScene".to_string()]);
+    assert_eq!(
+        asset.physics_scene_prims,
+        vec!["/World/PhysicsScene".to_string()]
+    );
     assert_eq!(asset.rigid_body_prims.len(), 2);
     assert!(asset.rigid_body_prims.iter().any(|p| p == "/World/Base"));
     assert!(asset.rigid_body_prims.iter().any(|p| p == "/World/Arm"));
@@ -93,8 +96,13 @@ fn reads_physics_scene_bodies_and_joints() {
     let hinge = &asset.joints[0];
     println!(
         "  Joint {}\n    kind={:?} body0={:?} body1={:?}\n    axis={:?} limits=[{:?}, {:?}]",
-        hinge.path, hinge.kind, hinge.body0, hinge.body1,
-        hinge.axis, hinge.lower_limit, hinge.upper_limit,
+        hinge.path,
+        hinge.kind,
+        hinge.body0,
+        hinge.body1,
+        hinge.axis,
+        hinge.lower_limit,
+        hinge.upper_limit,
     );
     assert_eq!(hinge.path, "/World/Hinge");
     assert_eq!(hinge.kind, JointKind::Revolute);

@@ -87,12 +87,12 @@ fn reads_skel_root_skeleton_and_binding() {
     assert_eq!(asset.skel_bindings.len(), 1);
 
     let skel = &asset.skeletons[0];
-    println!(
-        "  Skeleton {} joints = {:?}",
-        skel.path, skel.joints
-    );
+    println!("  Skeleton {} joints = {:?}", skel.path, skel.joints);
     assert_eq!(skel.path, "/World/Rig/Skel");
-    assert_eq!(skel.joints, vec!["root".to_string(), "root/tip".to_string()]);
+    assert_eq!(
+        skel.joints,
+        vec!["root".to_string(), "root/tip".to_string()]
+    );
 
     let root = &asset.skel_roots[0];
     println!(

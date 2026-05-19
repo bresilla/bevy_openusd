@@ -9,22 +9,21 @@ pub mod anim;
 mod asset;
 mod build;
 pub mod curves;
-pub mod mesh;
-pub mod nurbs_patch;
-pub mod tetmesh;
 mod light;
 pub mod markers;
 mod material;
-pub(crate) mod physics_attach;
+pub mod mesh;
+pub mod nurbs_patch;
 pub mod physics;
+pub(crate) mod physics_attach;
 pub mod prim_ref;
 pub mod skel_anim;
+pub mod tetmesh;
 mod texture;
 
 pub use asset::{
     LightTally, StageCamera, UsdAsset, UsdLoader, UsdLoaderError, UsdLoaderSettings,
-    VariantSelection, VariantSet, author_variant_session_layer, parse_variant_label,
-    variant_label,
+    VariantSelection, VariantSet, author_variant_session_layer, parse_variant_label, variant_label,
 };
 pub use mesh::{mesh_from_usd, mesh_from_usd_subset};
 // Marker components are part of this crate's public API. Living in
@@ -33,8 +32,8 @@ pub use mesh::{mesh_from_usd, mesh_from_usd_subset};
 // shim around an upstream crate).
 pub use markers::*;
 pub use prim_ref::{
-    UsdCustomAttrs, UsdDisplayName, UsdKind, UsdLocalExtent, UsdPrimRef, UsdProcedural,
-    UsdPurpose, UsdSpatialAudio,
+    UsdCustomAttrs, UsdDisplayName, UsdKind, UsdLocalExtent, UsdPrimRef, UsdProcedural, UsdPurpose,
+    UsdSpatialAudio,
 };
 
 use bevy::app::{App, Plugin};

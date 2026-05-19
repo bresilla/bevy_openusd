@@ -102,7 +102,8 @@ pub fn build_rigid_body(
                 .diagonal_inertia
                 .unwrap_or(DVec3::splat(0.4 * mass_kg * 0.01));
             let com = op.center_of_mass.unwrap_or(DVec3::ZERO);
-            builder = builder.additional_mass_properties(MassProperties::new(com, mass_kg, inertia));
+            builder =
+                builder.additional_mass_properties(MassProperties::new(com, mass_kg, inertia));
         }
         None if matches!(body_type, RigidBodyType::Dynamic) => {
             // Tiny safety mass + inertia so a dynamic body without a

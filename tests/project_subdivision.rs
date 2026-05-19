@@ -71,16 +71,25 @@ fn reads_subdivision_scheme_and_tallies_subsurface_prims() {
         .expect("asset missing")
         .clone();
 
-    println!("\n---- subdivision_prims ({} entries) ----", asset.subdivision_prims.len());
+    println!(
+        "\n---- subdivision_prims ({} entries) ----",
+        asset.subdivision_prims.len()
+    );
     for (path, scheme) in &asset.subdivision_prims {
         println!("  {path} → {scheme:?}");
     }
 
     assert_eq!(asset.subdivision_prims.len(), 2);
-    let mut by_path: std::collections::HashMap<&str, SubdivScheme> =
-        asset.subdivision_prims.iter().map(|(p, s)| (p.as_str(), *s)).collect();
+    let mut by_path: std::collections::HashMap<&str, SubdivScheme> = asset
+        .subdivision_prims
+        .iter()
+        .map(|(p, s)| (p.as_str(), *s))
+        .collect();
 
-    assert_eq!(by_path.remove("/World/CatmullClark"), Some(SubdivScheme::CatmullClark));
+    assert_eq!(
+        by_path.remove("/World/CatmullClark"),
+        Some(SubdivScheme::CatmullClark)
+    );
     assert_eq!(by_path.remove("/World/LoopTri"), Some(SubdivScheme::Loop));
     assert!(by_path.is_empty());
 

@@ -190,13 +190,11 @@ impl Stage {
             Some(Value::StringVec(v)) => v,
             _ => Vec::new(),
         };
-        let mut offsets: Vec<LayerOffset> = match spec
-            .get(FieldKey::SubLayerOffsets.as_str())
-            .cloned()
-        {
-            Some(Value::LayerOffsetVec(v)) => v,
-            _ => Vec::new(),
-        };
+        let mut offsets: Vec<LayerOffset> =
+            match spec.get(FieldKey::SubLayerOffsets.as_str()).cloned() {
+                Some(Value::LayerOffsetVec(v)) => v,
+                _ => Vec::new(),
+            };
         current.push(asset_path.into());
         offsets.push(LayerOffset::default());
         spec.add(FieldKey::SubLayers, Value::StringVec(current));

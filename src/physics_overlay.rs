@@ -126,7 +126,14 @@ fn draw_joints(
 
         // Kind-specific limit visualisation.
         if let (Some((p0, _)), Some(axw)) = (a0, axis_world_at_0) {
-            draw_kind_limits(&mut gizmos, joint, p0, axw, a1.map(|(p, _)| p), limit_radius);
+            draw_kind_limits(
+                &mut gizmos,
+                joint,
+                p0,
+                axw,
+                a1.map(|(p, _)| p),
+                limit_radius,
+            );
         }
     }
 }
@@ -287,8 +294,12 @@ fn draw_articulation_chains(
             };
             let Some(b0) = joint.body0 else { continue };
             let Some(b1) = joint.body1 else { continue };
-            let Ok(gt0) = transforms.get(b0) else { continue };
-            let Ok(gt1) = transforms.get(b1) else { continue };
+            let Ok(gt0) = transforms.get(b0) else {
+                continue;
+            };
+            let Ok(gt1) = transforms.get(b1) else {
+                continue;
+            };
             let (p0, _) = anchor_world(gt0, joint.local_pos0, joint.local_rot0);
             let (p1, _) = anchor_world(gt1, joint.local_pos1, joint.local_rot1);
             // Triple-draw with small Y offset to fake line thickness.
@@ -361,11 +372,7 @@ fn draw_scene_gravity(
         }
         let origin = gt.translation();
         let dir = scene.gravity_direction.normalize_or_zero();
-        gizmos.arrow(
-            origin,
-            origin + dir * len,
-            Color::from(tailwind::SLATE_100),
-        );
+        gizmos.arrow(origin, origin + dir * len, Color::from(tailwind::SLATE_100));
     }
 }
 

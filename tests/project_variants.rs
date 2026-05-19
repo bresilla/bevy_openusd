@@ -36,9 +36,12 @@ fn load_with(
     let handle: Handle<UsdAsset> = app
         .world()
         .resource::<AssetServer>()
-        .load_with_settings::<UsdAsset, _>(asset_name.to_string(), move |s: &mut UsdLoaderSettings| {
-            s.variant_selections = selections.clone();
-        });
+        .load_with_settings::<UsdAsset, _>(
+            asset_name.to_string(),
+            move |s: &mut UsdLoaderSettings| {
+                s.variant_selections = selections.clone();
+            },
+        );
     for _ in 0..200 {
         app.update();
         match app

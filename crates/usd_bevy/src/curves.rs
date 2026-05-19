@@ -685,11 +685,7 @@ pub fn hermite_to_read_curves(read: &ReadHermiteCurves) -> ReadCurves {
             let m0 = tans[i];
             let m1 = tans[i + 1];
             let inclusive_end = i == n - 2;
-            let span_samples = if inclusive_end {
-                segs + 1
-            } else {
-                segs
-            };
+            let span_samples = if inclusive_end { segs + 1 } else { segs };
             for s in 0..span_samples {
                 let t = s as f32 / segs as f32;
                 let h00 = 2.0 * t * t * t - 3.0 * t * t + 1.0;

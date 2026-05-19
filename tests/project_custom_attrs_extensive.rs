@@ -84,7 +84,10 @@ fn extensive_custom_attrs_and_dicts() {
         Some(&CustomAttrValue::String("bevy_openusd-test".to_string()))
     );
     assert_eq!(
-        asset.custom_layer_data.get("layer_version").and_then(|v| v.as_int()),
+        asset
+            .custom_layer_data
+            .get("layer_version")
+            .and_then(|v| v.as_int()),
         Some(3)
     );
     // Nested key lookup via dotted path.
@@ -100,7 +103,10 @@ fn extensive_custom_attrs_and_dicts() {
         .custom_attrs
         .get("/World")
         .expect("/World should have metadata (customData + assetInfo)");
-    assert!(world_meta.entries.is_empty(), "/World has no `custom` attrs");
+    assert!(
+        world_meta.entries.is_empty(),
+        "/World has no `custom` attrs"
+    );
     println!(
         "\n---- /World.customData ({} entries) ----",
         world_meta.custom_data.len()
@@ -117,15 +123,24 @@ fn extensive_custom_attrs_and_dicts() {
     }
 
     assert_eq!(
-        world_meta.custom_data.get("scene_author").and_then(|v| v.as_str()),
+        world_meta
+            .custom_data
+            .get("scene_author")
+            .and_then(|v| v.as_str()),
         Some("dev")
     );
     assert_eq!(
-        world_meta.custom_data.get_nested("rmf.map_name").and_then(|v| v.as_str()),
+        world_meta
+            .custom_data
+            .get_nested("rmf.map_name")
+            .and_then(|v| v.as_str()),
         Some("greenhouse")
     );
     assert_eq!(
-        world_meta.custom_data.get_nested("rmf.fleet_count").and_then(|v| v.as_int()),
+        world_meta
+            .custom_data
+            .get_nested("rmf.fleet_count")
+            .and_then(|v| v.as_int()),
         Some(3)
     );
 
@@ -134,7 +149,10 @@ fn extensive_custom_attrs_and_dicts() {
         Some("TestScene")
     );
     assert_eq!(
-        world_meta.asset_info.get("version").and_then(|v| v.as_str()),
+        world_meta
+            .asset_info
+            .get("version")
+            .and_then(|v| v.as_str()),
         Some("0.1.0")
     );
     match world_meta.asset_info.get("identifier") {
@@ -170,7 +188,10 @@ fn extensive_custom_attrs_and_dicts() {
     assert_eq!(robot.get_float("userProperties:mass_kg"), Some(12.75));
     assert_eq!(robot.get_string("userProperties:name"), Some("cart_01"));
     assert_eq!(robot.get_string("userProperties:kind"), Some("mobile_base"));
-    assert_eq!(robot.get_string("userProperties:config"), Some("./config.yaml"));
+    assert_eq!(
+        robot.get_string("userProperties:config"),
+        Some("./config.yaml")
+    );
 
     // Tuples.
     assert_eq!(robot.get_vec2("userProperties:size_2d"), Some([1.2, 0.8]));
@@ -178,7 +199,10 @@ fn extensive_custom_attrs_and_dicts() {
         robot.get_vec3("userProperties:base_offset"),
         Some([0.0, 0.05, 0.0])
     );
-    assert_eq!(robot.get_vec3("userProperties:grid_cell"), Some([4.0, 0.0, 2.0]));
+    assert_eq!(
+        robot.get_vec3("userProperties:grid_cell"),
+        Some([4.0, 0.0, 2.0])
+    );
     assert_eq!(
         robot.get_vec4("userProperties:padding"),
         Some([1.0, 2.0, 3.0, 4.0])
@@ -198,7 +222,9 @@ fn extensive_custom_attrs_and_dicts() {
     }
     match robot.get("userProperties:gains") {
         Some(CustomAttrValue::FloatArray(v)) => {
-            assert!((v[0] - 1.0).abs() < 1e-4 && (v[1] - 0.5).abs() < 1e-4 && (v[2] - 0.1).abs() < 1e-4);
+            assert!(
+                (v[0] - 1.0).abs() < 1e-4 && (v[1] - 0.5).abs() < 1e-4 && (v[2] - 0.1).abs() < 1e-4
+            );
         }
         other => panic!("gains should be FloatArray, got {other:?}"),
     }
@@ -213,7 +239,10 @@ fn extensive_custom_attrs_and_dicts() {
 
     // Robot carries its own customData too.
     assert_eq!(
-        robot.custom_data.get("spawn_priority").and_then(|v| v.as_int()),
+        robot
+            .custom_data
+            .get("spawn_priority")
+            .and_then(|v| v.as_int()),
         Some(2)
     );
     assert_eq!(
@@ -222,8 +251,7 @@ fn extensive_custom_attrs_and_dicts() {
     );
 
     // ── 4. Namespace queries ──────────────────────────────────────
-    let user_props: Vec<(&str, &CustomAttrValue)> =
-        robot.namespaced("userProperties:").collect();
+    let user_props: Vec<(&str, &CustomAttrValue)> = robot.namespaced("userProperties:").collect();
     println!(
         "\n---- namespaced('userProperties:') → {} hits ----",
         user_props.len()

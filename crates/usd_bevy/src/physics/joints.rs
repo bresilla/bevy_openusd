@@ -1,12 +1,10 @@
 //! `UsdPhysicsJoint` → entries in `PhysicsWorld.{multibody,impulse}_joints`.
 //! Bevy ECS adapter; all joint construction lives in `usd_rapier::joints`.
 
+use crate::markers::{UsdArticulationRoot, UsdDof, UsdDriveType, UsdJointKind, UsdPhysicsJoint};
 use bevy::prelude::*;
-use openusd::physics::{Dof, ReadDrive, ReadJoint, ReadLimit, JointKind};
+use openusd::physics::{Dof, JointKind, ReadDrive, ReadJoint, ReadLimit};
 use rapier3d_f64::prelude::*;
-use crate::markers::{
-    UsdArticulationRoot, UsdDof, UsdDriveType, UsdJointKind, UsdPhysicsJoint,
-};
 use usd_rapier::joints::build_and_insert_joint;
 
 use super::world::PhysicsWorld;
@@ -91,9 +89,19 @@ fn bridge_to_read_joint(j: &UsdPhysicsJoint) -> ReadJoint {
         body1: None,
         local_pos0: [j.local_pos0.x, j.local_pos0.y, j.local_pos0.z],
         // USD authors quat as (w, x, y, z); Bevy Quat is (x, y, z, w).
-        local_rot0: [j.local_rot0.w, j.local_rot0.x, j.local_rot0.y, j.local_rot0.z],
+        local_rot0: [
+            j.local_rot0.w,
+            j.local_rot0.x,
+            j.local_rot0.y,
+            j.local_rot0.z,
+        ],
         local_pos1: [j.local_pos1.x, j.local_pos1.y, j.local_pos1.z],
-        local_rot1: [j.local_rot1.w, j.local_rot1.x, j.local_rot1.y, j.local_rot1.z],
+        local_rot1: [
+            j.local_rot1.w,
+            j.local_rot1.x,
+            j.local_rot1.y,
+            j.local_rot1.z,
+        ],
         axis: axis_token,
         lower_limit: lower,
         upper_limit: upper,

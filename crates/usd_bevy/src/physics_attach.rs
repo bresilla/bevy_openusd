@@ -189,9 +189,7 @@ pub fn attach_physics_to_prim(
     // CollisionAPI (+ optional MeshCollisionAPI)
     if let Ok(Some(coll)) = ph::read_collision_shape(stage, path) {
         let shape = collider_shape_from_prim(stage, path, meta);
-        let approximation = coll
-            .approximation
-            .map(usd_collision_approx_to_marker);
+        let approximation = coll.approximation.map(usd_collision_approx_to_marker);
         if let Some(mat_path) = &coll.physics_material_path {
             pending
                 .colliders_with_material
@@ -219,14 +217,21 @@ pub fn attach_physics_to_prim(
     }
 
     // ArticulationRootAPI
-    if api_schemas.iter().any(|s| s == "PhysicsArticulationRootAPI") {
-        world.entity_mut(entity).insert(UsdArticulationRoot::default());
+    if api_schemas
+        .iter()
+        .any(|s| s == "PhysicsArticulationRootAPI")
+    {
+        world
+            .entity_mut(entity)
+            .insert(UsdArticulationRoot::default());
         pending.articulation_roots.push(entity);
     }
 
     // FilteredPairsAPI
     if let Ok(Some(fp)) = ph::read_filtered_pairs(stage, path) {
-        world.entity_mut(entity).insert(UsdCollisionFilter::default());
+        world
+            .entity_mut(entity)
+            .insert(UsdCollisionFilter::default());
         pending.filtered_pairs.push((entity, fp.filtered));
     }
 
@@ -470,13 +475,21 @@ fn convert_limit(l: ph::ReadLimit, meta: &StageMeta) -> UsdJointLimit {
 
 fn convert_drive(d: ph::ReadDrive, meta: &StageMeta) -> UsdJointDrive {
     let rot = dof_is_rotational(d.dof);
-    let pos_scale = if rot { PI / 180.0 } else { meta.meters_per_unit };
+    let pos_scale = if rot {
+        PI / 180.0
+    } else {
+        meta.meters_per_unit
+    };
     let target_position = d.target_position.map(|v| v * pos_scale);
     let target_velocity = d.target_velocity.map(|v| v * pos_scale);
     // Stiffness/damping are authored in scene-unit-per-author-angle;
     // convert by the same per-DOF factor (USD spec: stiffness scales
     // (target - current), so its units are inverse of position).
-    let dyn_scale = if rot { 180.0 / PI } else { 1.0 / meta.meters_per_unit };
+    let dyn_scale = if rot {
+        180.0 / PI
+    } else {
+        1.0 / meta.meters_per_unit
+    };
     UsdJointDrive {
         dof: dof_to_marker(d.dof),
         drive_type: drive_type_to_marker(d.drive_type),
@@ -516,13 +529,21 @@ fn collider_shape_from_prim(stage: &Stage, path: &Path, _meta: &StageMeta) -> Us
             let radius = read_double(stage, path, "radius").unwrap_or(0.5) as f32;
             let height = read_double(stage, path, "height").unwrap_or(1.0) as f32;
             let axis = capsule_axis(stage, path);
-            UsdColliderShape::Capsule { radius, height, axis }
+            UsdColliderShape::Capsule {
+                radius,
+                height,
+                axis,
+            }
         }
         "Cylinder" => {
             let radius = read_double(stage, path, "radius").unwrap_or(1.0) as f32;
             let height = read_double(stage, path, "height").unwrap_or(2.0) as f32;
             let axis = capsule_axis(stage, path);
-            UsdColliderShape::Cylinder { radius, height, axis }
+            UsdColliderShape::Cylinder {
+                radius,
+                height,
+                axis,
+            }
         }
         "Mesh" => UsdColliderShape::Mesh,
         "Plane" => UsdColliderShape::Plane,

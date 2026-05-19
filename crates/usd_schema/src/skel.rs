@@ -276,14 +276,7 @@ pub fn read_skel_animation_stage(
             ),
             Value::QuathVec(v) => Some(
                 v.into_iter()
-                    .map(|q| {
-                        [
-                            q[0].to_f32(),
-                            q[1].to_f32(),
-                            q[2].to_f32(),
-                            q[3].to_f32(),
-                        ]
-                    })
+                    .map(|q| [q[0].to_f32(), q[1].to_f32(), q[2].to_f32(), q[3].to_f32()])
                     .collect(),
             ),
             _ => None,
@@ -369,17 +362,19 @@ fn read_vec3f_vec(
     name: &str,
 ) -> anyhow::Result<Vec<[f32; 3]>> {
     let attr_path = prim.append_property(name).map_err(anyhow::Error::from)?;
-    Ok(match stage
-        .field::<Value>(attr_path, "default")
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::Vec3fVec(v)) => v,
-        Some(Value::Vec3dVec(v)) => v
-            .into_iter()
-            .map(|a| [a[0] as f32, a[1] as f32, a[2] as f32])
-            .collect(),
-        _ => Vec::new(),
-    })
+    Ok(
+        match stage
+            .field::<Value>(attr_path, "default")
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::Vec3fVec(v)) => v,
+            Some(Value::Vec3dVec(v)) => v
+                .into_iter()
+                .map(|a| [a[0] as f32, a[1] as f32, a[2] as f32])
+                .collect(),
+            _ => Vec::new(),
+        },
+    )
 }
 
 fn read_rel_targets(
@@ -387,7 +382,9 @@ fn read_rel_targets(
     prim: &Path,
     rel_name: &str,
 ) -> anyhow::Result<Vec<String>> {
-    let rel_path = prim.append_property(rel_name).map_err(anyhow::Error::from)?;
+    let rel_path = prim
+        .append_property(rel_name)
+        .map_err(anyhow::Error::from)?;
     let raw = stage
         .field::<Value>(rel_path, "targetPaths")
         .map_err(anyhow::Error::from)?;
@@ -403,13 +400,15 @@ fn read_rel_targets(
 
 fn read_token_vec(stage: &openusd::Stage, prim: &Path, name: &str) -> anyhow::Result<Vec<String>> {
     let attr_path = prim.append_property(name).map_err(anyhow::Error::from)?;
-    Ok(match stage
-        .field::<Value>(attr_path, "default")
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::TokenVec(v)) | Some(Value::StringVec(v)) => v,
-        _ => Vec::new(),
-    })
+    Ok(
+        match stage
+            .field::<Value>(attr_path, "default")
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::TokenVec(v)) | Some(Value::StringVec(v)) => v,
+            _ => Vec::new(),
+        },
+    )
 }
 
 fn read_int_vec(
@@ -418,13 +417,15 @@ fn read_int_vec(
     name: &str,
 ) -> anyhow::Result<Option<Vec<i32>>> {
     let attr_path = prim.append_property(name).map_err(anyhow::Error::from)?;
-    Ok(match stage
-        .field::<Value>(attr_path, "default")
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::IntVec(v)) => Some(v),
-        _ => None,
-    })
+    Ok(
+        match stage
+            .field::<Value>(attr_path, "default")
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::IntVec(v)) => Some(v),
+            _ => None,
+        },
+    )
 }
 
 fn read_float_vec(
@@ -433,14 +434,16 @@ fn read_float_vec(
     name: &str,
 ) -> anyhow::Result<Option<Vec<f32>>> {
     let attr_path = prim.append_property(name).map_err(anyhow::Error::from)?;
-    Ok(match stage
-        .field::<Value>(attr_path, "default")
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::FloatVec(v)) => Some(v),
-        Some(Value::DoubleVec(v)) => Some(v.into_iter().map(|d| d as f32).collect()),
-        _ => None,
-    })
+    Ok(
+        match stage
+            .field::<Value>(attr_path, "default")
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::FloatVec(v)) => Some(v),
+            Some(Value::DoubleVec(v)) => Some(v.into_iter().map(|d| d as f32).collect()),
+            _ => None,
+        },
+    )
 }
 
 fn read_rel_first_target(
@@ -448,7 +451,9 @@ fn read_rel_first_target(
     prim: &Path,
     rel_name: &str,
 ) -> anyhow::Result<Option<String>> {
-    let rel_path = prim.append_property(rel_name).map_err(anyhow::Error::from)?;
+    let rel_path = prim
+        .append_property(rel_name)
+        .map_err(anyhow::Error::from)?;
     let raw = stage
         .field::<Value>(rel_path, "targetPaths")
         .map_err(anyhow::Error::from)?;
@@ -466,20 +471,22 @@ fn read_mat4f_vec(
     name: &str,
 ) -> anyhow::Result<Vec<[f32; 16]>> {
     let attr_path = prim.append_property(name).map_err(anyhow::Error::from)?;
-    Ok(match stage
-        .field::<Value>(attr_path, "default")
-        .map_err(anyhow::Error::from)?
-    {
-        Some(Value::Matrix4dVec(v)) => v
-            .into_iter()
-            .map(|m| {
-                let mut out = [0.0f32; 16];
-                for i in 0..16 {
-                    out[i] = m[i] as f32;
-                }
-                out
-            })
-            .collect(),
-        _ => Vec::new(),
-    })
+    Ok(
+        match stage
+            .field::<Value>(attr_path, "default")
+            .map_err(anyhow::Error::from)?
+        {
+            Some(Value::Matrix4dVec(v)) => v
+                .into_iter()
+                .map(|m| {
+                    let mut out = [0.0f32; 16];
+                    for i in 0..16 {
+                        out[i] = m[i] as f32;
+                    }
+                    out
+                })
+                .collect(),
+            _ => Vec::new(),
+        },
+    )
 }

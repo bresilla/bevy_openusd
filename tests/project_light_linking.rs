@@ -2,7 +2,7 @@
 //! `light:filters` relationships round-trip into `LightCommon`.
 
 use openusd::sdf::Path;
-use usd_schema::lux::{read_light, ReadLight};
+use usd_schema::lux::{ReadLight, read_light};
 
 fn common_of(l: &ReadLight) -> &usd_schema::lux::LightCommon {
     match l {
@@ -17,8 +17,7 @@ fn common_of(l: &ReadLight) -> &usd_schema::lux::LightCommon {
 
 #[test]
 fn reads_light_linking_rels() {
-    let stage = openusd::Stage::open("tests/stages/light_linking.usda")
-        .expect("fixture parses");
+    let stage = openusd::Stage::open("tests/stages/light_linking.usda").expect("fixture parses");
 
     let key = read_light(&stage, &Path::new("/World/KeyLight").unwrap())
         .unwrap()
@@ -46,7 +45,10 @@ fn reads_light_linking_rels() {
     );
 
     assert_eq!(kc.light_link_targets, vec!["/World/StageLeft".to_string()]);
-    assert_eq!(kc.shadow_link_targets, vec!["/World/StageRight".to_string()]);
+    assert_eq!(
+        kc.shadow_link_targets,
+        vec!["/World/StageRight".to_string()]
+    );
     assert!(kc.light_filters.is_empty());
 
     // FillLight authored no linking — everything empty.

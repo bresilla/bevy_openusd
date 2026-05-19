@@ -362,7 +362,10 @@ fn extract_scalar_array_timesamples(body: &str, attr: &str) -> BTreeMap<OrdF64, 
     for (time, value_text) in iter_time_entries(time_block) {
         // value_text looks like "[s, s, s, ...]" — strip brackets,
         // split by comma.
-        let trimmed = value_text.trim().trim_start_matches('[').trim_end_matches(']');
+        let trimmed = value_text
+            .trim()
+            .trim_start_matches('[')
+            .trim_end_matches(']');
         let samples: Vec<f32> = trimmed
             .split(',')
             .filter_map(|s| s.trim().parse::<f32>().ok())
@@ -396,9 +399,7 @@ fn iter_time_entries(block: &str) -> Vec<(f64, &str)> {
     let mut i = 0;
     while i < bytes.len() {
         // Skip whitespace + commas.
-        while i < bytes.len()
-            && (bytes[i].is_ascii_whitespace() || bytes[i] == b',')
-        {
+        while i < bytes.len() && (bytes[i].is_ascii_whitespace() || bytes[i] == b',') {
             i += 1;
         }
         if i >= bytes.len() {

@@ -24,11 +24,7 @@ fn rich_network_resolves_textures_and_constants() {
          diffuse_color={:?} diffuse_texture={:?}\n  \
          metallic={:?} metallic_texture={:?}\n  \
          normal_texture={:?}",
-        m.diffuse_color,
-        m.diffuse_texture,
-        m.metallic,
-        m.metallic_texture,
-        m.normal_texture,
+        m.diffuse_color, m.diffuse_texture, m.metallic, m.metallic_texture, m.normal_texture,
     );
 
     // base_color goes: standard_surface.base_color

@@ -112,9 +112,7 @@ fn counts_instance_prims_and_detects_prototype_reuse() {
         a_handle, b_handle,
         "instance bodies should share a Mesh handle via content-hash dedup"
     );
-    println!(
-        "  /World/InstanceA/Body and /World/InstanceB/Body share Handle<Mesh>: true"
-    );
+    println!("  /World/InstanceA/Body and /World/InstanceB/Body share Handle<Mesh>: true");
 
     let unique_handle = by_path
         .get("/World/Unique/Body")

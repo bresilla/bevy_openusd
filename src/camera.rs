@@ -1,14 +1,15 @@
 //! Orbit camera — ported verbatim from
 //! `../bevy_urdf/src/camera.rs`. Astrocraft-style rig:
 //!
-//! - Scroll            → zoom (logarithmic, smoothed)
-//! - Middle-click drag → pan (focus slides in world XZ plane)
+//! - Scroll            → zoom (logarithmic, smoothed, close-inspection friendly)
+//! - Middle/Shift drag → pan (screen-space, not ground-plane locked)
 //! - Left + Right drag → orbit (yaw + elevation, clamped 5°–89°)
 //!
 //! Run conditions yield to egui when a panel wants the pointer, so orbiting
 //! doesn't fight with panel scroll / sliders.
 
 use bevy::input::mouse::{AccumulatedMouseScroll, MouseScrollUnit};
+use bevy::camera::Projection;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::input::egui_wants_any_pointer_input;
@@ -56,12 +57,12 @@ impl Default for ArcballCamera {
             yaw: 0.0,
             elevation: 25f32.to_radians(),
             distance: 4.0,
-            min_distance: 0.2,
+            min_distance: 0.001,
             max_distance: 60.0,
-            pan_sensitivity: 0.0012,
+            pan_sensitivity: 1.15,
             orbit_speed: 0.005,
-            zoom_step: 0.05,
-            zoom_smoothing: 6.0,
+            zoom_step: 0.12,
+            zoom_smoothing: 18.0,
         }
     }
 }
@@ -72,21 +73,18 @@ fn drive_arcball(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut pan_anchor: Local<Option<Vec2>>,
     mut orbit_anchor: Local<Option<Vec2>>,
-    mut cameras: Query<(&mut Transform, &mut ArcballCamera)>,
+    mut cameras: Query<(&mut Transform, &mut ArcballCamera, &Projection)>,
 ) {
-    let modifier_held = keys.any_pressed([
-        KeyCode::ShiftLeft,
-        KeyCode::ShiftRight,
-        KeyCode::ControlLeft,
-        KeyCode::ControlRight,
-    ]);
+    let shift_held = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
+    let control_held = keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]);
 
-    let middle = !modifier_held && mouse_buttons.pressed(MouseButton::Middle);
-    let left = !modifier_held && mouse_buttons.pressed(MouseButton::Left);
-    let right = !modifier_held && mouse_buttons.pressed(MouseButton::Right);
-    let both_lr = left && right;
+    let middle = mouse_buttons.pressed(MouseButton::Middle);
+    let left = mouse_buttons.pressed(MouseButton::Left);
+    let right = mouse_buttons.pressed(MouseButton::Right);
+    let pan_drag = !control_held && (middle || (shift_held && (left || right)));
+    let both_lr = !shift_held && !control_held && left && right;
 
-    if !middle {
+    if !pan_drag {
         *pan_anchor = None;
     }
     if !both_lr {
@@ -99,7 +97,7 @@ fn drive_arcball(
         .and_then(|w| w.cursor_position());
 
     let mut pan_delta = Vec2::ZERO;
-    if middle {
+    if pan_drag {
         if let Some(pos) = cursor {
             if let Some(anchor) = *pan_anchor {
                 pan_delta = pos - anchor;
@@ -118,12 +116,17 @@ fn drive_arcball(
         }
     }
 
-    for (mut tr, mut cam) in cameras.iter_mut() {
+    let window_height = primary_window
+        .single()
+        .ok()
+        .map(|w| w.resolution.height().max(1.0))
+        .unwrap_or(1080.0);
+
+    for (mut tr, mut cam, projection) in cameras.iter_mut() {
         if pan_delta != Vec2::ZERO {
-            let pan_speed = cam.distance * cam.pan_sensitivity;
-            let forward = Vec3::new(cam.yaw.sin(), 0.0, cam.yaw.cos());
-            let right_v = Vec3::new(forward.z, 0.0, -forward.x);
-            cam.focus += (-right_v * pan_delta.x - forward * pan_delta.y) * pan_speed;
+            let pan_world =
+                screen_space_pan_delta(&tr, &cam, projection, pan_delta, window_height);
+            cam.focus += pan_world;
         }
         if orbit_delta != Vec2::ZERO {
             cam.yaw -= orbit_delta.x * cam.orbit_speed;
@@ -132,6 +135,24 @@ fn drive_arcball(
         }
         apply_rig(&cam, &mut tr);
     }
+}
+
+fn screen_space_pan_delta(
+    tr: &Transform,
+    cam: &ArcballCamera,
+    projection: &Projection,
+    pan_delta: Vec2,
+    window_height: f32,
+) -> Vec3 {
+    let fov = match projection {
+        Projection::Perspective(p) => p.fov,
+        _ => core::f32::consts::FRAC_PI_4,
+    };
+    let world_units_per_pixel =
+        2.0 * cam.distance.max(cam.min_distance) * (fov * 0.5).tan() / window_height;
+    let right = tr.rotation * Vec3::X;
+    let up = tr.rotation * Vec3::Y;
+    (-right * pan_delta.x + up * pan_delta.y) * world_units_per_pixel * cam.pan_sensitivity
 }
 
 fn drive_arcball_zoom(
@@ -154,6 +175,8 @@ fn drive_arcball_zoom(
             let log_target = target.max(0.01).log10();
             let new_log = log_target - scroll_delta * cam.zoom_step;
             *target = 10f64.powf(new_log).clamp(min, max);
+        } else if *target < min || *target > max {
+            *target = target.clamp(min, max);
         }
 
         let dt = time.delta_secs_f64();

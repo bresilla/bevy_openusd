@@ -68,10 +68,9 @@ fn spawn_scene_root(app: &mut App, handle: &Handle<UsdAsset>) {
 fn reads_double_sided_orientation_and_extent() {
     // 1. Reader side — verify ReadMesh fields round-trip via openusd
     //    directly (no Bevy involvement).
-    let stage = openusd::Stage::open("tests/stages/mesh_correctness.usda")
-        .expect("fixture parses");
+    let stage = openusd::Stage::open("tests/stages/mesh_correctness.usda").expect("fixture parses");
     use openusd::sdf::Path;
-    use usd_schema::geom::{read_mesh, Orientation};
+    use usd_schema::geom::{Orientation, read_mesh};
 
     let single = read_mesh(&stage, &Path::new("/World/SingleSided").unwrap())
         .expect("read ok")
@@ -88,9 +87,15 @@ fn reads_double_sided_orientation_and_extent() {
          SingleSided: double_sided={} orientation={:?} extent={:?}\n  \
          DoubleSided: double_sided={} orientation={:?} extent={:?}\n  \
          LeftHanded:  double_sided={} orientation={:?} extent={:?}\n",
-        single.double_sided, single.orientation, single.extent,
-        double.double_sided, double.orientation, double.extent,
-        left.double_sided, left.orientation, left.extent,
+        single.double_sided,
+        single.orientation,
+        single.extent,
+        double.double_sided,
+        double.orientation,
+        double.extent,
+        left.double_sided,
+        left.orientation,
+        left.extent,
     );
 
     assert!(!single.double_sided);
@@ -112,10 +117,8 @@ fn reads_double_sided_orientation_and_extent() {
     spawn_scene_root(&mut app, &handle);
 
     let world = app.world_mut();
-    let mut by_path: std::collections::HashMap<
-        String,
-        bevy::asset::Handle<StandardMaterial>,
-    > = std::collections::HashMap::new();
+    let mut by_path: std::collections::HashMap<String, bevy::asset::Handle<StandardMaterial>> =
+        std::collections::HashMap::new();
     for (prim, mat) in world
         .query::<(&UsdPrimRef, &MeshMaterial3d<StandardMaterial>)>()
         .iter(world)
@@ -129,9 +132,7 @@ fn reads_double_sided_orientation_and_extent() {
     let double_mat = by_path
         .get("/World/DoubleSided")
         .expect("DoubleSided material missing");
-    println!(
-        "  single_mat handle = {single_mat:?}\n  double_mat handle = {double_mat:?}"
-    );
+    println!("  single_mat handle = {single_mat:?}\n  double_mat handle = {double_mat:?}");
     assert_ne!(
         single_mat, double_mat,
         "SingleSided and DoubleSided must resolve to distinct StandardMaterial handles"

@@ -74,10 +74,7 @@ fn applies_visibility_and_surfaces_kind() {
         .query::<(&UsdPrimRef, &Visibility, Option<&UsdKind>)>()
         .iter(world)
     {
-        by_path.insert(
-            prim.path.clone(),
-            (*vis, kind.map(|k| k.kind.clone())),
-        );
+        by_path.insert(prim.path.clone(), (*vis, kind.map(|k| k.kind.clone())));
     }
 
     println!("\n---- visibility + kind ----");

@@ -8,8 +8,7 @@ use usd_schema::shade::read_preview_material;
 
 #[test]
 fn reads_native_preview_materialx_wrapper_and_standard_surface() {
-    let stage = openusd::Stage::open("tests/stages/materialx.usda")
-        .expect("stage should open");
+    let stage = openusd::Stage::open("tests/stages/materialx.usda").expect("stage should open");
 
     // Native UsdPreviewSurface.
     let native = read_preview_material(

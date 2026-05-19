@@ -50,18 +50,23 @@ fn main() {
         if let Some((t, vals)) = a.blend_shape_weights.iter().next() {
             let nonzero = vals.iter().filter(|w| w.abs() > 1e-4).count();
             let total: f32 = vals.iter().map(|w| w.abs()).sum();
-            let max = vals
-                .iter()
-                .copied()
-                .map(|w| w.abs())
-                .fold(0.0f32, f32::max);
+            let max = vals.iter().copied().map(|w| w.abs()).fold(0.0f32, f32::max);
             println!(
                 "  blend weights at timecode={:.1} count={} nonzero={} sum_abs={:.3} max_abs={:.3}",
-                t.0, vals.len(), nonzero, total, max,
+                t.0,
+                vals.len(),
+                nonzero,
+                total,
+                max,
             );
             // Show top 5 by absolute value.
             let mut idx: Vec<usize> = (0..vals.len()).collect();
-            idx.sort_by(|&a, &b| vals[b].abs().partial_cmp(&vals[a].abs()).unwrap_or(std::cmp::Ordering::Equal));
+            idx.sort_by(|&a, &b| {
+                vals[b]
+                    .abs()
+                    .partial_cmp(&vals[a].abs())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
             for i in idx.iter().take(5) {
                 println!(
                     "    [{i}] {} = {:.4}",

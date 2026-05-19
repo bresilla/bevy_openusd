@@ -57,9 +57,7 @@ fn main() {
                     .flatten()
                     .unwrap_or_else(|| "(no typeName)".into());
                 *by_type.entry(tn.clone()).or_insert(0) += 1;
-                if let Ok(Some(_)) = stage
-                    .field::<Value>(p.clone(), "xformOpOrder")
-                {
+                if let Ok(Some(_)) = stage.field::<Value>(p.clone(), "xformOpOrder") {
                     with_xform_ops += 1;
                 }
                 if let Ok(attr_p) = p.append_property("xformOp:translate") {

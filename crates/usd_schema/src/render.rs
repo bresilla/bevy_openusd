@@ -142,11 +142,7 @@ fn read_attr_value(
         .map_err(anyhow::Error::from)
 }
 
-fn read_scalar_f32(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> anyhow::Result<Option<f32>> {
+fn read_scalar_f32(stage: &openusd::Stage, prim: &Path, name: &str) -> anyhow::Result<Option<f32>> {
     Ok(match read_attr_value(stage, prim, name)? {
         Some(Value::Float(f)) => Some(f),
         Some(Value::Double(d)) => Some(d as f32),
@@ -165,22 +161,14 @@ fn read_scalar_string(
     })
 }
 
-fn read_token(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> anyhow::Result<Option<String>> {
+fn read_token(stage: &openusd::Stage, prim: &Path, name: &str) -> anyhow::Result<Option<String>> {
     Ok(match read_attr_value(stage, prim, name)? {
         Some(Value::Token(s)) | Some(Value::String(s)) => Some(s),
         _ => None,
     })
 }
 
-fn read_token_vec(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> anyhow::Result<Vec<String>> {
+fn read_token_vec(stage: &openusd::Stage, prim: &Path, name: &str) -> anyhow::Result<Vec<String>> {
     Ok(match read_attr_value(stage, prim, name)? {
         Some(Value::TokenVec(v)) | Some(Value::StringVec(v)) => v,
         _ => Vec::new(),
@@ -192,7 +180,9 @@ fn read_rel_targets(
     prim: &Path,
     rel_name: &str,
 ) -> anyhow::Result<Vec<String>> {
-    let rel_path = prim.append_property(rel_name).map_err(anyhow::Error::from)?;
+    let rel_path = prim
+        .append_property(rel_name)
+        .map_err(anyhow::Error::from)?;
     let raw = stage
         .field::<Value>(rel_path, "targetPaths")
         .map_err(anyhow::Error::from)?;

@@ -67,6 +67,7 @@ bevy = { version = "0.18", default-features = false, features = [
     "ktx2",
     "zstd_rust",
     "x11",
+    "wayland",
     "reflect_auto_register",
 ] }
 

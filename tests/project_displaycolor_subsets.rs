@@ -68,7 +68,10 @@ fn projects_displaycolor_and_subsets() {
         let world = app.world_mut();
         let mut by_path: std::collections::HashMap<
             String,
-            (bevy::asset::Handle<Mesh>, bevy::asset::Handle<StandardMaterial>),
+            (
+                bevy::asset::Handle<Mesh>,
+                bevy::asset::Handle<StandardMaterial>,
+            ),
         > = std::collections::HashMap::new();
         for (prim, m3d, mat) in world
             .query::<(&UsdPrimRef, &Mesh3d, &MeshMaterial3d<StandardMaterial>)>()
@@ -91,13 +94,13 @@ fn projects_displaycolor_and_subsets() {
     };
 
     let meshes = app.world().resource::<Assets<Mesh>>();
-    let quad_mesh = meshes.get(&quad_mesh_handle).expect("ColoredQuad mesh missing");
+    let quad_mesh = meshes
+        .get(&quad_mesh_handle)
+        .expect("ColoredQuad mesh missing");
     let colors = quad_mesh
         .attribute(Mesh::ATTRIBUTE_COLOR)
         .expect("ATTRIBUTE_COLOR missing on ColoredQuad — displayColor wasn't projected");
-    println!(
-        "\n---- /World/ColoredQuad: primvars:displayColor → Mesh::ATTRIBUTE_COLOR ----"
-    );
+    println!("\n---- /World/ColoredQuad: primvars:displayColor → Mesh::ATTRIBUTE_COLOR ----");
     match colors {
         VertexAttributeValues::Float32x4(values) => {
             for (i, v) in values.iter().enumerate() {
@@ -106,7 +109,12 @@ fn projects_displaycolor_and_subsets() {
                     v[0], v[1], v[2], v[3]
                 );
             }
-            assert_eq!(values.len(), 4, "expected 4 vertex colors on the quad, got {}", values.len());
+            assert_eq!(
+                values.len(),
+                4,
+                "expected 4 vertex colors on the quad, got {}",
+                values.len()
+            );
             // Vertex 0 → red; vertex 2 → blue.
             let v0 = values[0];
             let v2 = values[2];
@@ -140,9 +148,7 @@ fn projects_displaycolor_and_subsets() {
         "expected exactly two subset children"
     );
 
-    println!(
-        "\n---- /World/SplitMesh GeomSubsets → one child entity per subset ----"
-    );
+    println!("\n---- /World/SplitMesh GeomSubsets → one child entity per subset ----");
     for p in &subset_paths {
         println!("  child: {p}");
     }

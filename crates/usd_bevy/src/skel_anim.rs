@@ -136,10 +136,7 @@ fn bracket<T>(samples: &[(f64, T)], t: f64) -> Option<(usize, usize, f64)> {
     }
     // Binary search for the first keyframe >= t.
     let hi = samples
-        .binary_search_by(|s| {
-            s.0.partial_cmp(&t)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })
+        .binary_search_by(|s| s.0.partial_cmp(&t).unwrap_or(std::cmp::Ordering::Equal))
         .unwrap_or_else(|i| i);
     let lo = hi.saturating_sub(1);
     let span = samples[hi].0 - samples[lo].0;

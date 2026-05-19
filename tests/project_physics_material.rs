@@ -7,9 +7,7 @@ use bevy::mesh::{Mesh, Mesh3d};
 use bevy::pbr::MeshMaterial3d;
 use bevy::prelude::*;
 use bevy::scene::{Scene, SceneRoot};
-use bevy_openusd::{
-    UsdAsset, UsdCollider, UsdPhysicsMaterial, UsdPlugin, UsdPrimRef,
-};
+use bevy_openusd::{UsdAsset, UsdCollider, UsdPhysicsMaterial, UsdPlugin, UsdPrimRef};
 
 fn build_test_app() -> App {
     let mut app = App::new();
@@ -36,7 +34,9 @@ fn load_and_spawn(app: &mut App, asset_name: &str) {
     for _ in 0..200 {
         app.update();
         if matches!(
-            app.world().resource::<AssetServer>().get_load_state(&handle),
+            app.world()
+                .resource::<AssetServer>()
+                .get_load_state(&handle),
             Some(LoadState::Loaded)
         ) {
             break;
@@ -75,7 +75,6 @@ fn physics_material_binding_resolves_to_material_entity() {
     let ball_e = entity_for_path(world, "/World/Ball");
     let slider_e = entity_for_path(world, "/World/Slider");
 
-
     // PhysicsMaterialAPI lands on Material prims with the four scalars.
     let rubber = world
         .get::<UsdPhysicsMaterial>(rubber_e)
@@ -111,5 +110,7 @@ fn physics_material_binding_resolves_to_material_entity() {
         "Slider.physics_material should resolve to Ice"
     );
 
-    println!("material binding OK: 2 PhysicsMaterials authored, both colliders resolve to right entity");
+    println!(
+        "material binding OK: 2 PhysicsMaterials authored, both colliders resolve to right entity"
+    );
 }

@@ -385,8 +385,7 @@ impl AssetLoader for UsdLoader {
         // authored itself.
         let session_layer_path = if !effective_variants.is_empty() {
             let text = author_variant_session_layer(&effective_variants);
-            let session_tmp =
-                tempfile_session(&tmp_dir, fs_path, &effective_variants, &text);
+            let session_tmp = tempfile_session(&tmp_dir, fs_path, &effective_variants, &text);
             std::fs::write(&session_tmp, &text)?;
             bevy::log::info!(
                 "usd: wrote {} variant selection(s) to session layer {}",
@@ -422,24 +421,22 @@ impl AssetLoader for UsdLoader {
                 Ok(())
             });
         if let Some(ref p) = session_layer_path {
-            let s = p.to_str().ok_or_else(|| {
-                UsdLoaderError::Stage("non-UTF-8 session-layer path".into())
-            })?;
+            let s = p
+                .to_str()
+                .ok_or_else(|| UsdLoaderError::Stage("non-UTF-8 session-layer path".into()))?;
             builder = builder.session_layer(s.to_string());
         }
-        let stage = builder
-            .open(tmp_str)
-            .map_err(|e| {
-                // Walk the anyhow chain so the real parser error (which
-                // layer-open wraps twice) surfaces to the user.
-                let mut msg = e.to_string();
-                let mut src: Option<&dyn std::error::Error> = e.source();
-                while let Some(s) = src {
-                    msg.push_str(&format!(" :: {s}"));
-                    src = s.source();
-                }
-                UsdLoaderError::Stage(msg)
-            })?;
+        let stage = builder.open(tmp_str).map_err(|e| {
+            // Walk the anyhow chain so the real parser error (which
+            // layer-open wraps twice) surfaces to the user.
+            let mut msg = e.to_string();
+            let mut src: Option<&dyn std::error::Error> = e.source();
+            while let Some(s) = src {
+                msg.push_str(&format!(" :: {s}"));
+                src = s.source();
+            }
+            UsdLoaderError::Stage(msg)
+        })?;
 
         let default_prim = stage.default_prim();
         let layer_count = stage.layer_count();
@@ -467,10 +464,8 @@ impl AssetLoader for UsdLoader {
         // Files come from `UsdLoaderSettings::skel_animation_files`
         // and the `BEVY_OPENUSD_SKEL_ANIM_FILE` env var (one path or
         // colon-separated list).
-        let mut skel_animations: HashMap<
-            String,
-            usd_schema::skel_anim_text::ReadSkelAnimText,
-        > = HashMap::new();
+        let mut skel_animations: HashMap<String, usd_schema::skel_anim_text::ReadSkelAnimText> =
+            HashMap::new();
         let mut anim_paths: Vec<PathBuf> = settings.skel_animation_files.clone();
         if let Ok(envv) = std::env::var("BEVY_OPENUSD_SKEL_ANIM_FILE") {
             for piece in envv.split(':') {
@@ -512,10 +507,7 @@ impl AssetLoader for UsdLoader {
             };
             let resolved = candidates.into_iter().find(|c| c.exists());
             let Some(path) = resolved else {
-                bevy::log::warn!(
-                    "skel anim sidecar: file not found: {}",
-                    p.display()
-                );
+                bevy::log::warn!("skel anim sidecar: file not found: {}", p.display());
                 continue;
             };
             match std::fs::read_to_string(&path) {
@@ -543,10 +535,7 @@ impl AssetLoader for UsdLoader {
                     }
                 }
                 Err(e) => {
-                    bevy::log::warn!(
-                        "skel anim sidecar: failed to read {}: {e}",
-                        path.display()
-                    );
+                    bevy::log::warn!("skel anim sidecar: failed to read {}: {e}", path.display());
                 }
             }
         }
@@ -766,7 +755,9 @@ fn extract_usdz(
 fn collect_text_layers_recursive(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
     let mut stack = vec![dir.to_path_buf()];
     while let Some(d) = stack.pop() {
-        let Ok(entries) = std::fs::read_dir(&d) else { continue };
+        let Ok(entries) = std::fs::read_dir(&d) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let path = entry.path();
             let Ok(ft) = entry.file_type() else { continue };
@@ -844,7 +835,10 @@ fn collect_curves_and_points(
     let mut curves = HashMap::new();
     let mut points = HashMap::new();
     let _ = stage.traverse(|path: &Path| {
-        let type_name: Option<String> = stage.field::<String>(path.clone(), "typeName").ok().flatten();
+        let type_name: Option<String> = stage
+            .field::<String>(path.clone(), "typeName")
+            .ok()
+            .flatten();
         match type_name.as_deref() {
             Some("BasisCurves") => {
                 if let Ok(Some(read)) = usd_schema::geom::read_curves(stage, path) {

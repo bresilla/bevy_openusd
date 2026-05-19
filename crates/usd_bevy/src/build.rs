@@ -32,8 +32,6 @@ use usd_schema::geom as ugeom;
 use usd_schema::xform as uxf;
 
 use crate::curves::{curves_mesh, hermite_to_read_curves, nurbs_to_read_curves, points_mesh};
-use crate::nurbs_patch::nurbs_patch_to_bevy_mesh;
-use crate::tetmesh::tetmesh_to_bevy_mesh;
 use crate::light::{Tally as LightTally, spawn_light};
 use crate::material::{add_material_labeled, default_material, standard_material_from_usd};
 use crate::mesh::{
@@ -41,6 +39,7 @@ use crate::mesh::{
     mesh_from_usd_subset_with_skin, mesh_from_usd_with_skin, mesh_plane, mesh_sphere,
     skin_attrs_from_binding,
 };
+use crate::nurbs_patch::nurbs_patch_to_bevy_mesh;
 use crate::physics_attach::{
     PendingPhysics, StageMeta, attach_physics_to_prim, populate_articulation_joints,
     read_stage_meta, resolve_pending_physics,
@@ -49,6 +48,7 @@ use crate::prim_ref::{
     UsdBlendShapeBinding, UsdDisplayName, UsdJoint, UsdKind, UsdLocalExtent, UsdPrimRef,
     UsdProcedural, UsdPurpose, UsdSkelAnimDriver, UsdSkelRoot, UsdSpatialAudio,
 };
+use crate::tetmesh::tetmesh_to_bevy_mesh;
 use usd_schema::lux as ulux;
 use usd_schema::shade as ushade;
 use usd_schema::skel as uskel;
@@ -421,10 +421,7 @@ impl<'lc, 'a> BuildCtx<'lc, 'a> {
     /// shared default; `true` allocates a distinct
     /// `Material:Default-doubleSided` variant. Kept cached under a
     /// synthetic label so repeat meshes share.
-    fn default_material_ds(
-        &mut self,
-        double_sided: bool,
-    ) -> bevy::asset::Handle<StandardMaterial> {
+    fn default_material_ds(&mut self, double_sided: bool) -> bevy::asset::Handle<StandardMaterial> {
         if !double_sided {
             return self.default_material();
         }
@@ -466,7 +463,11 @@ impl<'lc, 'a> BuildCtx<'lc, 'a> {
             perceptual_roughness: 0.8,
             metallic: 0.0,
             double_sided,
-            cull_mode: if double_sided { None } else { Some(bevy::render::render_resource::Face::Back) },
+            cull_mode: if double_sided {
+                None
+            } else {
+                Some(bevy::render::render_resource::Face::Back)
+            },
             ..Default::default()
         };
         let handle = self.lc.add_labeled_asset(label.clone(), mat);
@@ -650,7 +651,10 @@ fn spawn_prim_subtree(
     //      full walk.
     let mut replay_ctx: Option<ReplayCtx> = None;
     let is_instanceable = matches!(
-        stage.field::<bool>(path.clone(), "instanceable").ok().flatten(),
+        stage
+            .field::<bool>(path.clone(), "instanceable")
+            .ok()
+            .flatten(),
         Some(true)
     );
     if is_instanceable {
@@ -763,7 +767,6 @@ fn spawn_prim_subtree(
         });
     }
 
-
     // UsdSkel: when this prim is a SkelRoot, resolve its Skeleton +
     // animationSource and spawn one Bevy entity per joint, parented
     // per the joint topology with the authored restTransforms as
@@ -820,9 +823,7 @@ fn spawn_prim_subtree(
             // Peek the Mesh3d + MeshMaterial3d handles that
             // attach_geometry just inserted (if any).
             let entity_ref = world.entity(entity);
-            let mesh_handle = entity_ref
-                .get::<Mesh3d>()
-                .map(|m| m.0.clone());
+            let mesh_handle = entity_ref.get::<Mesh3d>().map(|m| m.0.clone());
             let material_handle = entity_ref
                 .get::<MeshMaterial3d<StandardMaterial>>()
                 .map(|m| m.0.clone());
@@ -1045,7 +1046,10 @@ fn attach_skel_root(
         .and_then(|p| Path::new(p).ok())
         .or_else(|| find_first_typed_descendant(stage, path, "Skeleton"));
     let Some(skel_path) = skel_prim_path else {
-        bevy::log::warn!("skel: no Skeleton resolvable for SkelRoot {}", path.as_str());
+        bevy::log::warn!(
+            "skel: no Skeleton resolvable for SkelRoot {}",
+            path.as_str()
+        );
         return;
     };
     let Some(mut skel) = uskel::read_skeleton(stage, &skel_path).ok().flatten() else {
@@ -1100,7 +1104,10 @@ fn attach_skel_root(
                 return true; // try next pass
             };
             let local = transform_from_mat4_row_major(
-                skel.rest_transforms.get(i).copied().unwrap_or(IDENTITY_MAT4),
+                skel.rest_transforms
+                    .get(i)
+                    .copied()
+                    .unwrap_or(IDENTITY_MAT4),
             );
             let je = world
                 .spawn((
@@ -1173,7 +1180,11 @@ fn attach_skel_root(
         let anim_lookup_key = root
             .animation_source
             .as_deref()
-            .and_then(|p| p.rsplit_once('/').map(|(_, n)| n.to_string()).or_else(|| Some(p.to_string())))
+            .and_then(|p| {
+                p.rsplit_once('/')
+                    .map(|(_, n)| n.to_string())
+                    .or_else(|| Some(p.to_string()))
+            })
             .or_else(|| {
                 // Fall back to the only sidecar entry — most users
                 // only side-load one animation file.
@@ -1218,11 +1229,10 @@ fn attach_skel_root(
                     || !a.scales.is_empty()
                     || !a.blend_shape_weights.is_empty()
             });
-        let from_sidecar: Option<usd_schema::skel_anim_text::ReadSkelAnimText> =
-            anim_lookup_key
-                .as_deref()
-                .and_then(|k| ctx.skel_animations.get(k))
-                .cloned();
+        let from_sidecar: Option<usd_schema::skel_anim_text::ReadSkelAnimText> = anim_lookup_key
+            .as_deref()
+            .and_then(|k| ctx.skel_animations.get(k))
+            .cloned();
         let resolved_anim = from_stage.or(from_sidecar);
         if let Some(ref anim) = resolved_anim {
             // Remap animation joints → skeleton joint entities.
@@ -1246,11 +1256,8 @@ fn attach_skel_root(
                 .iter()
                 .map(|(t, v)| (t.0, v.clone()))
                 .collect();
-            let scales: Vec<(f64, Vec<[f32; 3]>)> = anim
-                .scales
-                .iter()
-                .map(|(t, v)| (t.0, v.clone()))
-                .collect();
+            let scales: Vec<(f64, Vec<[f32; 3]>)> =
+                anim.scales.iter().map(|(t, v)| (t.0, v.clone())).collect();
             let mapped = anim_to_skel.iter().filter(|e| e.is_some()).count();
             let bs_weights: Vec<(f64, Vec<f32>)> = anim
                 .blend_shape_weights
@@ -1342,9 +1349,9 @@ fn build_subset_skinned_mesh(
                 .iter()
                 .position(|p| p == jname)
                 .or_else(|| {
-                    info.joint_paths.iter().position(|p| {
-                        p.rsplit_once('/').map(|(_, n)| n).unwrap_or(p) == jname
-                    })
+                    info.joint_paths
+                        .iter()
+                        .position(|p| p.rsplit_once('/').map(|(_, n)| n).unwrap_or(p) == jname)
                 });
             match pos {
                 Some(idx) => {
@@ -1638,7 +1645,9 @@ fn effective_skin_pretransform(stage: &Stage, mesh_path: &Path) -> bevy::math::M
 
 fn read_geom_bind_transform(stage: &Stage, prim: &Path) -> Option<bevy::math::Mat4> {
     use openusd::sdf::Value;
-    let attr = prim.append_property("primvars:skel:geomBindTransform").ok()?;
+    let attr = prim
+        .append_property("primvars:skel:geomBindTransform")
+        .ok()?;
     let v = stage.field::<Value>(attr, "default").ok().flatten()?;
     match v {
         Value::Matrix4d(m) => {
@@ -1813,9 +1822,11 @@ fn augment_skeleton_from_anim(
     }
 
     let added = new_joints.len() as i64 - skel.joints.len() as i64;
-    let reordered =
-        new_joints.iter().zip(skel.joints.iter()).any(|(a, b)| a != b)
-            || new_joints.len() != skel.joints.len();
+    let reordered = new_joints
+        .iter()
+        .zip(skel.joints.iter())
+        .any(|(a, b)| a != b)
+        || new_joints.len() != skel.joints.len();
     skel.joints = new_joints;
     skel.bind_transforms = new_bind;
     skel.rest_transforms = new_rest;
@@ -1998,11 +2009,7 @@ fn attach_geometry(
             };
             let cache_key = match &binding {
                 None => mesh_content_hash(&read),
-                Some(b) => format!(
-                    "{}_skin_{}",
-                    mesh_content_hash(&read),
-                    skel_binding_hash(b)
-                ),
+                Some(b) => format!("{}_skin_{}", mesh_content_hash(&read), skel_binding_hash(b)),
             };
             // Blendshape names referenced by this mesh (bound via
             // SkelBindingAPI). Folded into the cache key + sets the
@@ -2068,13 +2075,7 @@ fn attach_geometry(
                 // Bake blend-shape morph targets onto the mesh.
                 if let Some(b) = &binding {
                     if !b.blend_shape_targets.is_empty() {
-                        let _ = bake_blend_shapes_into_mesh(
-                            stage,
-                            b,
-                            &read,
-                            &mut bevy_mesh,
-                            ctx,
-                        );
+                        let _ = bake_blend_shapes_into_mesh(stage, b, &read, &mut bevy_mesh, ctx);
                     }
                 }
                 let handle = ctx.add_mesh_labeled(format!("Mesh:{cache_key}"), bevy_mesh);
@@ -2095,12 +2096,12 @@ fn attach_geometry(
                     if let Some((joints, ibps_handle)) =
                         build_subset_skinned_mesh(&info, b, &mut ctx.lc, path)
                     {
-                        world.entity_mut(entity).insert(
-                            bevy::mesh::skinning::SkinnedMesh {
+                        world
+                            .entity_mut(entity)
+                            .insert(bevy::mesh::skinning::SkinnedMesh {
                                 inverse_bindposes: ibps_handle,
                                 joints,
-                            },
-                        );
+                            });
                         ctx.skinned_attached += 1;
                     } else {
                         ctx.skinned_failed += 1;
@@ -2136,18 +2137,12 @@ fn attach_geometry(
                     // without parallel skel:blendShapes tokens).
                     let max_w = bevy::mesh::morph::MAX_MORPH_WEIGHTS;
                     let take = b.blend_shape_targets.len().min(max_w);
-                    let mut names: Vec<String> = b
-                        .blend_shapes
-                        .iter()
-                        .take(take)
-                        .cloned()
-                        .collect();
+                    let mut names: Vec<String> =
+                        b.blend_shapes.iter().take(take).cloned().collect();
                     while names.len() < take {
                         names.push(String::new());
                     }
-                    if let Ok(mw) =
-                        bevy::mesh::morph::MeshMorphWeights::new(vec![0.0_f32; take])
-                    {
+                    if let Ok(mw) = bevy::mesh::morph::MeshMorphWeights::new(vec![0.0_f32; take]) {
                         world
                             .entity_mut(entity)
                             .insert(mw)
@@ -2267,10 +2262,7 @@ fn attach_geometry(
         }
         "NurbsPatch" => {
             let Some(read) = ugeom::read_nurbs_patch(stage, path).ok().flatten() else {
-                bevy::log::debug!(
-                    "nurbs_patch: {} missing required attrs",
-                    path.as_str()
-                );
+                bevy::log::debug!("nurbs_patch: {} missing required attrs", path.as_str());
                 return;
             };
             let mesh = nurbs_patch_to_bevy_mesh(&read);
@@ -2307,8 +2299,7 @@ fn attach_geometry(
             // existing tube builder.
             let read = hermite_to_read_curves(&hermite);
             let mesh = curves_mesh(&read, ctx.curve_default_radius, ctx.curve_ring_segments);
-            let handle =
-                ctx.add_mesh_labeled(format!("HermiteCurves:{}", path.as_str()), mesh);
+            let handle = ctx.add_mesh_labeled(format!("HermiteCurves:{}", path.as_str()), mesh);
             let mat = ctx.default_material();
             world
                 .entity_mut(entity)
@@ -2432,9 +2423,9 @@ fn spawn_mesh_with_subsets(
         .as_ref()
         .map(|info| info.joint_entities.len() as u16)
         .unwrap_or(0);
-    let skin_attrs = skel_binding.as_ref().map(|b| {
-        skin_attrs_from_binding(b, read.points.len(), max_joints)
-    });
+    let skin_attrs = skel_binding
+        .as_ref()
+        .map(|b| skin_attrs_from_binding(b, read.points.len(), max_joints));
 
     // Apply pretransform once to a working ReadMesh — every subset
     // shares the same point buffer.
@@ -2493,9 +2484,16 @@ fn spawn_mesh_with_subsets(
             ),
             None => mesh_from_usd_subset(read, Some(&subset.indices)),
         };
-        let label = format!("Mesh:{}:subset{subset_ix}:{}", mesh_path.as_str(), subset.name);
+        let label = format!(
+            "Mesh:{}:subset{subset_ix}:{}",
+            mesh_path.as_str(),
+            subset.name
+        );
         let mesh_handle = ctx.add_mesh_labeled(label, mesh);
-        let binding = subset.material_binding.clone().or_else(|| parent_binding.clone());
+        let binding = subset
+            .material_binding
+            .clone()
+            .or_else(|| parent_binding.clone());
         let mat = match binding {
             Some(mat_prim) => ctx.material_for(stage, &mat_prim, read.double_sided),
             None if read.display_color.is_some() => {
@@ -2525,11 +2523,9 @@ fn spawn_mesh_with_subsets(
         .collect();
     if !residual.is_empty() {
         let mesh = match skin_attrs.as_ref() {
-            Some(skin) => mesh_from_usd_subset_with_skin(
-                read_for_skin.as_ref(),
-                Some(&residual),
-                Some(skin),
-            ),
+            Some(skin) => {
+                mesh_from_usd_subset_with_skin(read_for_skin.as_ref(), Some(&residual), Some(skin))
+            }
             None => mesh_from_usd_subset(read, Some(&residual)),
         };
         let label = format!("Mesh:{}:residual", mesh_path.as_str());
@@ -2655,10 +2651,8 @@ fn replay_prototype(
         }
         let parent_rel = d.parent_relative_path.clone().unwrap_or_default();
         let parent_entity = *by_rel.get(&parent_rel).unwrap_or(&instance_root);
-        let instance_prim_ref = UsdPrimRef::new(format!(
-            "{}{}",
-            rc.instance_prim_path, d.relative_path
-        ));
+        let instance_prim_ref =
+            UsdPrimRef::new(format!("{}{}", rc.instance_prim_path, d.relative_path));
         let mut e = world.spawn((
             Name::new(d.leaf_name.clone()),
             d.relative_transform,
@@ -2690,14 +2684,7 @@ fn replay_prototype(
 fn is_replayable_type(type_name: Option<&str>) -> bool {
     matches!(
         type_name.unwrap_or(""),
-        "" | "Xform"
-            | "Scope"
-            | "Mesh"
-            | "Cube"
-            | "Sphere"
-            | "Cylinder"
-            | "Capsule"
-            | "Plane"
+        "" | "Xform" | "Scope" | "Mesh" | "Cube" | "Sphere" | "Cylinder" | "Capsule" | "Plane"
     )
 }
 
@@ -2986,8 +2973,12 @@ fn mesh_is_y_up(read: &ugeom::ReadMesh) -> bool {
     let mut mx = [f32::NEG_INFINITY; 3];
     for p in &read.points {
         for i in 0..3 {
-            if p[i] < mn[i] { mn[i] = p[i]; }
-            if p[i] > mx[i] { mx[i] = p[i]; }
+            if p[i] < mn[i] {
+                mn[i] = p[i];
+            }
+            if p[i] > mx[i] {
+                mx[i] = p[i];
+            }
         }
     }
     let dy = mx[1] - mn[1];
@@ -3087,7 +3078,9 @@ fn display_color_is_useful(cs: &[[f32; 3]]) -> bool {
     //   1. Any value far from white → real shading info.
     //   2. Variation between values (e.g. per-vertex gradient) →
     //      real shading info even if the average is near-white.
-    let near_white = |c: &[f32; 3]| (c[0] - 1.0).abs() < 0.02 && (c[1] - 1.0).abs() < 0.02 && (c[2] - 1.0).abs() < 0.02;
+    let near_white = |c: &[f32; 3]| {
+        (c[0] - 1.0).abs() < 0.02 && (c[1] - 1.0).abs() < 0.02 && (c[2] - 1.0).abs() < 0.02
+    };
     let any_non_white = cs.iter().any(|c| !near_white(c));
     if any_non_white {
         return true;

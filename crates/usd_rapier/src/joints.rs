@@ -18,7 +18,7 @@
 
 use anyhow::Result;
 use glam::{DQuat, DVec3};
-use openusd::physics::{Dof, ReadDrive, ReadJoint, JointKind};
+use openusd::physics::{Dof, JointKind, ReadDrive, ReadJoint};
 use rapier3d_f64::prelude::*;
 
 /// Insert the joint into the appropriate Rapier set. `body0`/`body1`
@@ -45,20 +45,18 @@ pub fn build_and_insert_joint(
     let local_rot1 = quat_wxyz_to_d(joint.local_rot1);
 
     match joint.kind {
-        JointKind::Revolute | JointKind::Prismatic => {
-            insert_axis_joint(
-                multibody_joints,
-                impulse_joints,
-                joint,
-                body0,
-                body1,
-                use_multibody,
-                local_pos0,
-                local_pos1,
-                local_rot0,
-                local_rot1,
-            )
-        }
+        JointKind::Revolute | JointKind::Prismatic => insert_axis_joint(
+            multibody_joints,
+            impulse_joints,
+            joint,
+            body0,
+            body1,
+            use_multibody,
+            local_pos0,
+            local_pos1,
+            local_rot0,
+            local_rot1,
+        ),
         JointKind::Fixed => {
             let joint = FixedJointBuilder::new()
                 .local_anchor1(local_pos0)
@@ -192,7 +190,12 @@ fn insert_axis_joint(
         };
         if let Some(d) = j.drives.iter().find(|d| dof_match(d.dof)) {
             if let Some(target) = d.target_position {
-                b = b.motor_position(motor_axis, target as f64, d.stiffness as f64, d.damping as f64);
+                b = b.motor_position(
+                    motor_axis,
+                    target as f64,
+                    d.stiffness as f64,
+                    d.damping as f64,
+                );
             } else if let Some(vel) = d.target_velocity {
                 b = b.motor_velocity(motor_axis, vel as f64, d.damping as f64);
             }

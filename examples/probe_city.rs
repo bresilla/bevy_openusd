@@ -9,8 +9,14 @@ fn main() {
         .nth(1)
         .unwrap_or_else(|| "assets/PointInstancedMedCity/PointInstancedMedCity.usd".to_string());
     let stage = openusd::Stage::open(&path).unwrap();
-    let up = stage.field::<String>(Path::abs_root(), "upAxis").ok().flatten();
-    let mpu = stage.field::<Value>(Path::abs_root(), "metersPerUnit").ok().flatten();
+    let up = stage
+        .field::<String>(Path::abs_root(), "upAxis")
+        .ok()
+        .flatten();
+    let mpu = stage
+        .field::<Value>(Path::abs_root(), "metersPerUnit")
+        .ok()
+        .flatten();
     println!("ROOT upAxis={up:?} metersPerUnit={mpu:?}");
     let dp = stage.default_prim();
     println!("default_prim={dp:?}");
@@ -30,15 +36,26 @@ fn main() {
         Err(e) => println!("read_point_instancer ERROR: {e}"),
     }
     for pi in 0..8 {
-        let proto = Path::new(&format!("/MediterraneanHills/Buildings/Prototypes/prototype_{pi}")).unwrap();
+        let proto = Path::new(&format!(
+            "/MediterraneanHills/Buildings/Prototypes/prototype_{pi}"
+        ))
+        .unwrap();
         let children = stage.prim_children(proto.clone()).unwrap_or_default();
         print!("prototype_{pi}: children={children:?}");
         for ch in &children {
             if let Ok(child_path) = proto.append_path(ch.as_str()) {
                 if let Ok(Some(m)) = usd_schema::geom::read_mesh(&stage, &child_path) {
-                    print!(" {ch}=(p{},f{})", m.points.len(), m.face_vertex_counts.len());
+                    print!(
+                        " {ch}=(p{},f{})",
+                        m.points.len(),
+                        m.face_vertex_counts.len()
+                    );
                 } else {
-                    let tn: String = stage.field::<String>(child_path.clone(), "typeName").ok().flatten().unwrap_or_default();
+                    let tn: String = stage
+                        .field::<String>(child_path.clone(), "typeName")
+                        .ok()
+                        .flatten()
+                        .unwrap_or_default();
                     print!(" {ch}=(?type={tn})");
                 }
             }
@@ -51,20 +68,38 @@ fn main() {
             *counts.entry(*p).or_insert(0) += 1;
         }
         println!("protoIndices distribution: {counts:?}");
-        println!("positions={} orientations={} scales={}", d.positions.len(), d.orientations.len(), d.scales.len());
-        println!("first 3 positions: {:?}", &d.positions[..3.min(d.positions.len())]);
-        println!("first 3 orientations: {:?}", &d.orientations[..3.min(d.orientations.len())]);
+        println!(
+            "positions={} orientations={} scales={}",
+            d.positions.len(),
+            d.orientations.len(),
+            d.scales.len()
+        );
+        println!(
+            "first 3 positions: {:?}",
+            &d.positions[..3.min(d.positions.len())]
+        );
+        println!(
+            "first 3 orientations: {:?}",
+            &d.orientations[..3.min(d.orientations.len())]
+        );
         println!("first 3 scales: {:?}", &d.scales[..3.min(d.scales.len())]);
         // Range of positions to gauge real-world size of the asset.
         let mut mn = [f32::INFINITY; 3];
         let mut mx = [f32::NEG_INFINITY; 3];
         for p in &d.positions {
             for i in 0..3 {
-                if p[i] < mn[i] { mn[i] = p[i]; }
-                if p[i] > mx[i] { mx[i] = p[i]; }
+                if p[i] < mn[i] {
+                    mn[i] = p[i];
+                }
+                if p[i] > mx[i] {
+                    mx[i] = p[i];
+                }
             }
         }
-        println!("positions range: min={mn:?} max={mx:?} extent={:?}", [mx[0]-mn[0], mx[1]-mn[1], mx[2]-mn[2]]);
+        println!(
+            "positions range: min={mn:?} max={mx:?} extent={:?}",
+            [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]]
+        );
     }
     // Dump raw type variants of the timeSampled attrs.
     for attr in ["positions", "orientations", "scales"] {
@@ -76,7 +111,14 @@ fn main() {
                     Value::Vec3hVec(a) => format!("Vec3hVec(n={})", a.len()),
                     Value::Vec3dVec(a) => format!("Vec3dVec(n={})", a.len()),
                     Value::QuatfVec(a) => format!("QuatfVec(n={})", a.len()),
-                    Value::QuathVec(a) => format!("QuathVec(n={}) head={:?}", a.len(), a.iter().take(3).map(|q| [q[0].to_f32(), q[1].to_f32(), q[2].to_f32(), q[3].to_f32()]).collect::<Vec<_>>()),
+                    Value::QuathVec(a) => format!(
+                        "QuathVec(n={}) head={:?}",
+                        a.len(),
+                        a.iter()
+                            .take(3)
+                            .map(|q| [q[0].to_f32(), q[1].to_f32(), q[2].to_f32(), q[3].to_f32()])
+                            .collect::<Vec<_>>()
+                    ),
                     Value::QuatdVec(a) => format!("QuatdVec(n={})", a.len()),
                     other => format!("{other:?}"),
                 };
@@ -84,17 +126,25 @@ fn main() {
             }
         }
     }
-    let mesh_path = Path::new("/MediterraneanHills/Buildings/Prototypes/prototype_0/mesh_0").unwrap();
+    let mesh_path =
+        Path::new("/MediterraneanHills/Buildings/Prototypes/prototype_0/mesh_0").unwrap();
     if let Ok(Some(m)) = usd_schema::geom::read_mesh(&stage, &mesh_path) {
         let mut mn = [f32::INFINITY; 3];
         let mut mx = [f32::NEG_INFINITY; 3];
         for p in &m.points {
             for i in 0..3 {
-                if p[i] < mn[i] { mn[i] = p[i]; }
-                if p[i] > mx[i] { mx[i] = p[i]; }
+                if p[i] < mn[i] {
+                    mn[i] = p[i];
+                }
+                if p[i] > mx[i] {
+                    mx[i] = p[i];
+                }
             }
         }
-        println!("prototype_0 mesh extent: min={mn:?} max={mx:?} dims={:?}", [mx[0]-mn[0], mx[1]-mn[1], mx[2]-mn[2]]);
+        println!(
+            "prototype_0 mesh extent: min={mn:?} max={mx:?} dims={:?}",
+            [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]]
+        );
     }
     let mp = mesh_path.append_property("normals").unwrap();
     if let Ok(Some(Value::TimeSamples(ts))) = stage.field::<Value>(mp, "timeSamples") {

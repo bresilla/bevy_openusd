@@ -29,10 +29,7 @@ pub struct ReadSpatialAudio {
     pub gain: Option<f64>,
 }
 
-pub fn read_spatial_audio(
-    stage: &openusd::Stage,
-    prim: &Path,
-) -> Result<Option<ReadSpatialAudio>> {
+pub fn read_spatial_audio(stage: &openusd::Stage, prim: &Path) -> Result<Option<ReadSpatialAudio>> {
     let file_path = read_asset_or_string(stage, prim, "filePath")?;
     let aural_mode = read_token(stage, prim, "auralMode")?;
     let playback_mode = read_token(stage, prim, "playbackMode")?;
@@ -70,11 +67,7 @@ fn attr_default_value(stage: &openusd::Stage, attr: &Path) -> Result<Option<Valu
         .map_err(anyhow::Error::from)
 }
 
-fn read_asset_or_string(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> Result<Option<String>> {
+fn read_asset_or_string(stage: &openusd::Stage, prim: &Path, name: &str) -> Result<Option<String>> {
     let attr = prim.append_property(name).map_err(anyhow::Error::from)?;
     Ok(match attr_default_value(stage, &attr)? {
         Some(Value::AssetPath(s)) | Some(Value::String(s)) | Some(Value::Token(s)) => Some(s),
@@ -90,11 +83,7 @@ fn read_token(stage: &openusd::Stage, prim: &Path, name: &str) -> Result<Option<
     })
 }
 
-fn read_double_or_timecode(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> Result<Option<f64>> {
+fn read_double_or_timecode(stage: &openusd::Stage, prim: &Path, name: &str) -> Result<Option<f64>> {
     let attr = prim.append_property(name).map_err(anyhow::Error::from)?;
     Ok(match attr_default_value(stage, &attr)? {
         Some(Value::Double(v)) => Some(v),

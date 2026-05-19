@@ -1,17 +1,17 @@
 //! `UsdCollider` → entries in `PhysicsWorld.colliders`. Bevy ECS
 //! adapter; all builder construction lives in `usd_rapier::colliders`.
 
+use crate::markers::{
+    UsdArticulationRoot, UsdCollider, UsdColliderShape, UsdCollisionApprox, UsdPhysicsMaterial,
+    UsdRigidBody,
+};
 use bevy::math::DVec3;
 use bevy::mesh::Mesh3d;
 use bevy::prelude::*;
 use openusd::physics::CollisionApprox;
 use rapier3d_f64::geometry::{Group, InteractionGroups, InteractionTestMode};
 use rapier3d_f64::math::Pose;
-use crate::markers::{
-    UsdArticulationRoot, UsdCollider, UsdColliderShape, UsdCollisionApprox, UsdPhysicsMaterial,
-    UsdRigidBody,
-};
-use usd_rapier::colliders::{build_collider, ColliderOpinion, ShapeInput};
+use usd_rapier::colliders::{ColliderOpinion, ShapeInput, build_collider};
 
 use super::bodies::BodyAttached;
 use super::convert::{quat_to_d, vec3_to_d};
@@ -53,9 +53,7 @@ pub fn convert_colliders(
             .and_then(|e| body_globals.get(e).ok())
             .map(|b| b.compute_transform().scale)
             .unwrap_or(Vec3::ONE);
-        let mesh_world_scale = gt
-            .map(|g| g.compute_transform().scale)
-            .unwrap_or(Vec3::ONE);
+        let mesh_world_scale = gt.map(|g| g.compute_transform().scale).unwrap_or(Vec3::ONE);
         let local_scale = Vec3::new(
             mesh_world_scale.x / body_scale.x,
             mesh_world_scale.y / body_scale.y,
@@ -74,29 +72,45 @@ pub fn convert_colliders(
 
         // Build the backend-neutral ShapeInput.
         let shape = match &col.shape {
-            UsdColliderShape::Cube { size } => ShapeInput::Cube {
-                size: *size as f64,
-            },
+            UsdColliderShape::Cube { size } => ShapeInput::Cube { size: *size as f64 },
             UsdColliderShape::Sphere { radius } => ShapeInput::Sphere {
                 radius: *radius as f64,
             },
-            UsdColliderShape::Capsule { radius, height, axis } => {
+            UsdColliderShape::Capsule {
+                radius,
+                height,
+                axis,
+            } => {
                 let half = axis.normalize_or_zero() * (*height * 0.5);
                 ShapeInput::Capsule {
                     half: DVec3::new(half.x as f64, half.y as f64, half.z as f64),
                     radius: *radius as f64,
                 }
             }
-            UsdColliderShape::Cylinder { radius, height, axis } => {
+            UsdColliderShape::Cylinder {
+                radius,
+                height,
+                axis,
+            } => {
                 let unit_axis = axis.normalize_or(Vec3::Y);
                 let abs_axis = unit_axis.abs();
-                let (height_scale, radius_scale) = if abs_axis.x > abs_axis.y && abs_axis.x > abs_axis.z {
-                    (entity_scale.x.abs(), entity_scale.y.abs().max(entity_scale.z.abs()))
-                } else if abs_axis.z > abs_axis.y {
-                    (entity_scale.z.abs(), entity_scale.x.abs().max(entity_scale.y.abs()))
-                } else {
-                    (entity_scale.y.abs(), entity_scale.x.abs().max(entity_scale.z.abs()))
-                };
+                let (height_scale, radius_scale) =
+                    if abs_axis.x > abs_axis.y && abs_axis.x > abs_axis.z {
+                        (
+                            entity_scale.x.abs(),
+                            entity_scale.y.abs().max(entity_scale.z.abs()),
+                        )
+                    } else if abs_axis.z > abs_axis.y {
+                        (
+                            entity_scale.z.abs(),
+                            entity_scale.x.abs().max(entity_scale.y.abs()),
+                        )
+                    } else {
+                        (
+                            entity_scale.y.abs(),
+                            entity_scale.x.abs().max(entity_scale.z.abs()),
+                        )
+                    };
                 ShapeInput::Cylinder {
                     half_height: (*height * 0.5 * height_scale) as f64,
                     radius: (*radius * radius_scale) as f64,
@@ -140,11 +154,7 @@ pub fn convert_colliders(
         )
         .map(|root| {
             let bit = articulation_group_bit(root);
-            InteractionGroups::new(
-                bit,
-                Group::ALL.difference(bit),
-                InteractionTestMode::And,
-            )
+            InteractionGroups::new(bit, Group::ALL.difference(bit), InteractionTestMode::And)
         });
 
         let parent_handle = parent_entity.and_then(|e| world.entity_to_body.get(&e).copied());

@@ -60,7 +60,11 @@ pub fn nurbs_patch_to_bevy_mesh(read: &ReadNurbsPatch) -> Mesh {
     let mut positions: Vec<[f32; 3]> = Vec::with_capacity((nsamp * nsamp) as usize);
     let mut uvs: Vec<[f32; 2]> = Vec::with_capacity((nsamp * nsamp) as usize);
     for sv in 0..nsamp {
-        let tv = if nsamp > 1 { sv as f64 / (nsamp - 1) as f64 } else { 0.0 };
+        let tv = if nsamp > 1 {
+            sv as f64 / (nsamp - 1) as f64
+        } else {
+            0.0
+        };
         let v_raw = vmin + (vmax - vmin) * tv;
         // Same trick as the curve sampler: nudge the last sample
         // slightly below the upper bound so the knot-span search still
@@ -71,7 +75,11 @@ pub fn nurbs_patch_to_bevy_mesh(read: &ReadNurbsPatch) -> Mesh {
             v_raw
         };
         for su in 0..nsamp {
-            let tu = if nsamp > 1 { su as f64 / (nsamp - 1) as f64 } else { 0.0 };
+            let tu = if nsamp > 1 {
+                su as f64 / (nsamp - 1) as f64
+            } else {
+                0.0
+            };
             let u_raw = umin + (umax - umin) * tu;
             let u = if tu >= 1.0 {
                 umax - (umax - umin).abs() * 1e-6
@@ -127,7 +135,10 @@ pub fn nurbs_patch_to_bevy_mesh(read: &ReadNurbsPatch) -> Mesh {
         .map(|n| n.normalize_or_zero().to_array())
         .collect();
 
-    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
+    let mut mesh = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    );
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals_arr);
     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
@@ -161,7 +172,10 @@ fn eval_patch(
 }
 
 fn empty_mesh() -> Mesh {
-    let mut m = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
+    let mut m = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    );
     m.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
     m.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
     m.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());

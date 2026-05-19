@@ -60,14 +60,22 @@ pub fn draw_collider_gizmos(
             TypedShape::Capsule(c) => {
                 let a = vec3_from_d(c.segment.a);
                 let b = vec3_from_d(c.segment.b);
-                gizmos.line(translation + rotation * a, translation + rotation * b, DEBUG_COLOR);
+                gizmos.line(
+                    translation + rotation * a,
+                    translation + rotation * b,
+                    DEBUG_COLOR,
+                );
             }
             TypedShape::ConvexPolyhedron(poly) => {
                 let points = poly.points();
                 for edge in poly.edges() {
                     let a = vec3_from_d(points[edge.vertices[0] as usize]);
                     let b = vec3_from_d(points[edge.vertices[1] as usize]);
-                    gizmos.line(translation + rotation * a, translation + rotation * b, DEBUG_COLOR);
+                    gizmos.line(
+                        translation + rotation * a,
+                        translation + rotation * b,
+                        DEBUG_COLOR,
+                    );
                 }
             }
             // Trimeshes / heightfields fall through to AABB outline.

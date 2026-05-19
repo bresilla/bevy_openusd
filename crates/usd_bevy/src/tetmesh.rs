@@ -51,7 +51,10 @@ pub fn tetmesh_to_bevy_mesh(read: &ReadTetMesh) -> Mesh {
         .map(|n| n.normalize_or_zero().to_array())
         .collect();
 
-    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
+    let mut mesh = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    );
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, read.points.clone());
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals_arr);
     // UVs aren't authored on a TetMesh; emit zeros so the StandardMaterial

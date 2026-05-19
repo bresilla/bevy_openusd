@@ -152,15 +152,15 @@ fn walk_prim(stage: &openusd::Stage, prim: &SdfPath, t: &mut Tally) {
         let mut found = "(no surface)".to_string();
         for out in ["outputs:surface", "outputs:mtlx:surface"] {
             if let Ok(attr) = prim.append_property(out) {
-                if let Ok(Some(Value::PathListOp(op))) = stage.field::<Value>(attr, "connectionPaths") {
+                if let Ok(Some(Value::PathListOp(op))) =
+                    stage.field::<Value>(attr, "connectionPaths")
+                {
                     if let Some(target) = op.flatten().into_iter().next() {
                         // target is a property path; chase to its prim
                         // and grab info:id.
                         let shader_prim = target.prim_path();
                         if let Ok(id_attr) = shader_prim.append_property("info:id") {
-                            if let Ok(Some(v)) =
-                                stage.field::<Value>(id_attr, "default")
-                            {
+                            if let Ok(Some(v)) = stage.field::<Value>(id_attr, "default") {
                                 if let Value::Token(s) | Value::String(s) = v {
                                     found = s;
                                     break;
@@ -232,9 +232,17 @@ fn main() {
     print_top("Prim type names", &t.type_names, 40);
     print_top("API schemas", &t.api_schemas, 20);
     print_top("Materials by shader id", &t.materials_by_shader, 20);
-    print_top("displayColor first-value buckets (rounded to 0.1)", &t.shader_ids, 30);
+    print_top(
+        "displayColor first-value buckets (rounded to 0.1)",
+        &t.shader_ids,
+        30,
+    );
     print_top("Property names", &t.property_names, 50);
-    print_top("Extra primvars (beyond displayColor / normals / st)", &t.extra_primvars, 30);
+    print_top(
+        "Extra primvars (beyond displayColor / normals / st)",
+        &t.extra_primvars,
+        30,
+    );
 
     // Composed-stage check: open the top-level `Kitchen_set.usd` and
     // probe a few mesh prims via direct `stage.field` queries (not

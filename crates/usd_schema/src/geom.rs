@@ -623,12 +623,8 @@ pub fn read_nurbs_curves(
     };
 
     // `order` is optional; default cubic (order = 4) per UsdGeomNurbsCurves.
-    let order = read_int_array(stage, prim, "order")?.unwrap_or_else(|| {
-        curve_vertex_counts
-            .iter()
-            .map(|_| 4)
-            .collect()
-    });
+    let order = read_int_array(stage, prim, "order")?
+        .unwrap_or_else(|| curve_vertex_counts.iter().map(|_| 4).collect());
 
     let knots = read_double_array(stage, prim, "knots")?.unwrap_or_default();
 
@@ -752,18 +748,14 @@ pub struct ReadTetMesh {
     pub display_color: Option<Vec<[f32; 3]>>,
 }
 
-pub fn read_tetmesh(
-    stage: &openusd::Stage,
-    prim: &Path,
-) -> anyhow::Result<Option<ReadTetMesh>> {
+pub fn read_tetmesh(stage: &openusd::Stage, prim: &Path) -> anyhow::Result<Option<ReadTetMesh>> {
     let Some(points) = read_vec3f_array(stage, prim, "points")? else {
         return Ok(None);
     };
     let Some(tet_vertex_indices) = read_int_array(stage, prim, "tetVertexIndices")? else {
         return Ok(None);
     };
-    let surface_face_vertex_indices =
-        read_int_array(stage, prim, "surfaceFaceVertexIndices")?;
+    let surface_face_vertex_indices = read_int_array(stage, prim, "surfaceFaceVertexIndices")?;
     let display_color = read_vec3f_array(stage, prim, "primvars:displayColor")?;
     Ok(Some(ReadTetMesh {
         points,
@@ -897,10 +889,7 @@ pub enum VisibilityState {
 /// the attribute is unauthored (USD default). Does **not** yet read
 /// `timeSamples` — static only for now; animated visibility is a
 /// future M22.x.
-pub fn read_visibility(
-    stage: &openusd::Stage,
-    prim: &Path,
-) -> anyhow::Result<VisibilityState> {
+pub fn read_visibility(stage: &openusd::Stage, prim: &Path) -> anyhow::Result<VisibilityState> {
     Ok(match read_token(stage, prim, "visibility")?.as_deref() {
         Some("invisible") => VisibilityState::Invisible,
         _ => VisibilityState::Inherited,
@@ -1061,12 +1050,9 @@ impl CustomAttrValue {
     pub fn as_vec4(&self) -> Option<[f32; 4]> {
         match self {
             Self::Vec4f(a) | Self::Quatf(a) => Some(*a),
-            Self::Vec4d(a) | Self::Quatd(a) => Some([
-                a[0] as f32,
-                a[1] as f32,
-                a[2] as f32,
-                a[3] as f32,
-            ]),
+            Self::Vec4d(a) | Self::Quatd(a) => {
+                Some([a[0] as f32, a[1] as f32, a[2] as f32, a[3] as f32])
+            }
             Self::Vec4i(a) => Some([a[0] as f32, a[1] as f32, a[2] as f32, a[3] as f32]),
             _ => None,
         }
@@ -1136,10 +1122,7 @@ impl CustomDict {
         self.entries.len()
     }
     pub fn get(&self, name: &str) -> Option<&CustomAttrValue> {
-        self.entries
-            .iter()
-            .find(|(n, _)| n == name)
-            .map(|(_, v)| v)
+        self.entries.iter().find(|(n, _)| n == name).map(|(_, v)| v)
     }
     pub fn iter(&self) -> impl Iterator<Item = &(String, CustomAttrValue)> {
         self.entries.iter()
@@ -1177,7 +1160,10 @@ pub fn read_custom_attrs(
         // `custom = true` is the marker that distinguishes user-authored
         // attributes from schema-defined ones.
         let is_custom = matches!(
-            stage.field::<bool>(attr_path.clone(), "custom").ok().flatten(),
+            stage
+                .field::<bool>(attr_path.clone(), "custom")
+                .ok()
+                .flatten(),
             Some(true)
         );
         if !is_custom {
@@ -1223,11 +1209,9 @@ fn value_to_custom(v: Value) -> CustomAttrValue {
         Value::Vec2f(a) => CustomAttrValue::Vec2f(a),
         Value::Vec2d(a) => CustomAttrValue::Vec2d(a),
         Value::Vec2i(a) => CustomAttrValue::Vec2i(a),
-        Value::Vec3h(a) => CustomAttrValue::Vec3f([
-            f32::from(a[0]),
-            f32::from(a[1]),
-            f32::from(a[2]),
-        ]),
+        Value::Vec3h(a) => {
+            CustomAttrValue::Vec3f([f32::from(a[0]), f32::from(a[1]), f32::from(a[2])])
+        }
         Value::Vec3f(a) => CustomAttrValue::Vec3f(a),
         Value::Vec3d(a) => CustomAttrValue::Vec3d(a),
         Value::Vec3i(a) => CustomAttrValue::Vec3i(a),
@@ -1263,9 +1247,7 @@ fn value_to_custom(v: Value) -> CustomAttrValue {
         Value::UintVec(v) => CustomAttrValue::UIntArray(v),
         Value::Int64Vec(v) => CustomAttrValue::Int64Array(v),
         Value::Uint64Vec(v) => CustomAttrValue::UInt64Array(v),
-        Value::HalfVec(v) => {
-            CustomAttrValue::FloatArray(v.into_iter().map(f32::from).collect())
-        }
+        Value::HalfVec(v) => CustomAttrValue::FloatArray(v.into_iter().map(f32::from).collect()),
         Value::FloatVec(v) => CustomAttrValue::FloatArray(v),
         Value::DoubleVec(v) => CustomAttrValue::DoubleArray(v),
         Value::StringVec(v) => CustomAttrValue::StringArray(v),
@@ -1321,9 +1303,7 @@ fn value_to_custom(v: Value) -> CustomAttrValue {
 /// our ordered `CustomDict`. USD doesn't guarantee authoring order
 /// through HashMap, but we sort alphabetically to keep test output
 /// + YAML emission stable.
-fn dict_from_value_map(
-    map: std::collections::HashMap<String, Value>,
-) -> CustomDict {
+fn dict_from_value_map(map: std::collections::HashMap<String, Value>) -> CustomDict {
     let mut entries: Vec<(String, CustomAttrValue)> = map
         .into_iter()
         .map(|(k, v)| (k, value_to_custom(v)))
@@ -1334,10 +1314,7 @@ fn dict_from_value_map(
 
 /// Read the `customData` dictionary authored on a prim. Returns
 /// `None` when unauthored (most prims don't carry one).
-pub fn read_custom_data(
-    stage: &openusd::Stage,
-    prim: &Path,
-) -> anyhow::Result<Option<CustomDict>> {
+pub fn read_custom_data(stage: &openusd::Stage, prim: &Path) -> anyhow::Result<Option<CustomDict>> {
     let raw = stage
         .field::<Value>(prim.clone(), "customData")
         .map_err(anyhow::Error::from)?;
@@ -1353,10 +1330,7 @@ pub fn read_custom_data(
 /// Read the `assetInfo` dictionary authored on a prim. Package
 /// management tools (Omniverse, Houdini, Maya) stash identifier /
 /// version metadata here.
-pub fn read_asset_info(
-    stage: &openusd::Stage,
-    prim: &Path,
-) -> anyhow::Result<Option<CustomDict>> {
+pub fn read_asset_info(stage: &openusd::Stage, prim: &Path) -> anyhow::Result<Option<CustomDict>> {
     let raw = stage
         .field::<Value>(prim.clone(), "assetInfo")
         .map_err(anyhow::Error::from)?;
@@ -1372,9 +1346,7 @@ pub fn read_asset_info(
 /// Read the pseudo-root `customLayerData` dictionary — layer-level
 /// freeform metadata. Omniverse authors camera bookmarks, layer
 /// authoring state, render settings defaults, etc. here.
-pub fn read_custom_layer_data(
-    stage: &openusd::Stage,
-) -> anyhow::Result<Option<CustomDict>> {
+pub fn read_custom_layer_data(stage: &openusd::Stage) -> anyhow::Result<Option<CustomDict>> {
     let raw = stage
         .field::<Value>(Path::abs_root(), "customLayerData")
         .map_err(anyhow::Error::from)?;
@@ -1457,10 +1429,7 @@ fn read_bool(stage: &openusd::Stage, prim: &Path, name: &str) -> anyhow::Result<
 /// Read `UsdGeomBoundable.extent` — authored as `float3[2]` (min / max
 /// in prim-local space). Returns `None` when unauthored; consumer is
 /// expected to compute from vertex data in that case.
-fn read_extent(
-    stage: &openusd::Stage,
-    prim: &Path,
-) -> anyhow::Result<Option<[[f32; 3]; 2]>> {
+fn read_extent(stage: &openusd::Stage, prim: &Path) -> anyhow::Result<Option<[[f32; 3]; 2]>> {
     let arr = read_vec3f_array(stage, prim, "extent")?;
     Ok(match arr {
         Some(v) if v.len() >= 2 => Some([v[0], v[1]]),
@@ -1491,11 +1460,7 @@ fn read_double_array(
     })
 }
 
-fn read_int_scalar(
-    stage: &openusd::Stage,
-    prim: &Path,
-    name: &str,
-) -> anyhow::Result<Option<i32>> {
+fn read_int_scalar(stage: &openusd::Stage, prim: &Path, name: &str) -> anyhow::Result<Option<i32>> {
     Ok(match attr_default(stage, prim, name)? {
         Some(Value::Int(v)) => Some(v),
         _ => None,
@@ -1521,11 +1486,9 @@ fn read_vec2d_array(
 ) -> anyhow::Result<Option<Vec<[f64; 2]>>> {
     Ok(match attr_default(stage, prim, name)? {
         Some(Value::Vec2dVec(v)) => Some(v),
-        Some(Value::Vec2fVec(v)) => Some(
-            v.into_iter()
-                .map(|a| [a[0] as f64, a[1] as f64])
-                .collect(),
-        ),
+        Some(Value::Vec2fVec(v)) => {
+            Some(v.into_iter().map(|a| [a[0] as f64, a[1] as f64]).collect())
+        }
         _ => None,
     })
 }

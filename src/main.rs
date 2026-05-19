@@ -31,16 +31,16 @@ use bevy_egui::EguiPlugin;
 use usd_bevy::{UsdAsset, UsdLoaderSettings, UsdPlugin, UsdPrimRef};
 
 use crate::camera::{ArcballCamera, ArcballCameraPlugin};
-use bevy_glacial::prelude::{
-    AxisGizmo, AxisGizmoPlugin, ChaseCamera, GroundGrid, GroundGridPlugin,
-};
 use crate::keyboard::ViewerKeyboardPlugin;
 use crate::overlays::{OverlaysPlugin, SceneExtent};
 use crate::state::{
     CameraBookmarks, CameraMount, FlyTo, LoadRequest, LoaderTuning, ReloadRequest, SelectedPrim,
     StageInfo, UsdStageTime,
 };
-use crate::ui::{ViewerUiPlugin, RIBBON_LEFT, RIB_TREE};
+use crate::ui::{RIB_TREE, RIBBON_LEFT, ViewerUiPlugin};
+use bevy_glacial::prelude::{
+    AxisGizmo, AxisGizmoPlugin, ChaseCamera, GroundGrid, GroundGridPlugin,
+};
 
 #[derive(Resource)]
 struct StageHandle(Handle<UsdAsset>);
@@ -125,54 +125,53 @@ fn main() {
         .add_systems(Update, lift_scene_off_ground)
         .add_systems(Update, sync_collider_debug_visibility);
 
-    app
-    .init_resource::<Spawned>()
-    .init_resource::<ReloadRequest>()
-    .init_resource::<LoadRequest>()
-    .init_resource::<SelectedPrim>()
-    .init_resource::<FlyTo>()
-    .init_resource::<CameraMount>()
-    .init_resource::<LoaderTuning>()
-    .init_resource::<UsdStageTime>()
-    .init_resource::<CameraBookmarks>()
-    .add_systems(Startup, open_default_panel)
-    .insert_resource(StageInfo {
-        path: asset_path.clone(),
-        ..default()
-    })
-    .insert_resource(RequestedAsset {
-        name: asset_path,
-        root: asset_root.clone(),
-    })
-    .add_systems(
-        Startup,
-        (sweep_variant_tempfiles, load_stage, spawn_camera_and_ground),
-    )
-    .add_systems(
-        Update,
-        (
-            spawn_when_ready,
-            fit_camera_once,
-            debug_origin_prims_once,
-            debug_dump_layout_once,
-            debug_dump_physics_once,
-            debug_dump_physics_tick,
-            handle_usd_hot_reload,
-            apply_load_request,
-            apply_fly_to,
-            draw_selected_prim_highlight,
-            follow_mounted_camera,
-            rebuild_tuned_meshes,
-            tick_stage_time,
-            evaluate_animated_prims,
-            drive_skel_animations,
-            drive_blend_shape_weights,
-            draw_joint_gizmos,
-            hide_meshes_on_startup,
-            sync_chase_camera,
-            sync_ground_grid_visibility,
-        ),
-    );
+    app.init_resource::<Spawned>()
+        .init_resource::<ReloadRequest>()
+        .init_resource::<LoadRequest>()
+        .init_resource::<SelectedPrim>()
+        .init_resource::<FlyTo>()
+        .init_resource::<CameraMount>()
+        .init_resource::<LoaderTuning>()
+        .init_resource::<UsdStageTime>()
+        .init_resource::<CameraBookmarks>()
+        .add_systems(Startup, open_default_panel)
+        .insert_resource(StageInfo {
+            path: asset_path.clone(),
+            ..default()
+        })
+        .insert_resource(RequestedAsset {
+            name: asset_path,
+            root: asset_root.clone(),
+        })
+        .add_systems(
+            Startup,
+            (sweep_variant_tempfiles, load_stage, spawn_camera_and_ground),
+        )
+        .add_systems(
+            Update,
+            (
+                spawn_when_ready,
+                fit_camera_once,
+                debug_origin_prims_once,
+                debug_dump_layout_once,
+                debug_dump_physics_once,
+                debug_dump_physics_tick,
+                handle_usd_hot_reload,
+                apply_load_request,
+                apply_fly_to,
+                draw_selected_prim_highlight,
+                follow_mounted_camera,
+                rebuild_tuned_meshes,
+                tick_stage_time,
+                evaluate_animated_prims,
+                drive_skel_animations,
+                drive_blend_shape_weights,
+                draw_joint_gizmos,
+                hide_meshes_on_startup,
+                sync_chase_camera,
+                sync_ground_grid_visibility,
+            ),
+        );
     let hide_meshes = std::env::var("BEVY_OPENUSD_HIDE_MESHES")
         .ok()
         .map(|v| matches!(v.as_str(), "1" | "true" | "on"))
@@ -366,6 +365,7 @@ fn spawn_physics_ground(mut world: ResMut<usd_bevy::physics::PhysicsWorld>) {
 }
 
 fn spawn_camera_and_ground(mut commands: Commands) {
+    use bevy::camera::{PerspectiveProjection, Projection};
     use bevy::core_pipeline::tonemapping::Tonemapping;
     use bevy::post_process::bloom::Bloom;
     use bevy::render::view::Hdr;
@@ -383,6 +383,13 @@ fn spawn_camera_and_ground(mut commands: Commands) {
     // light sources and bright reflections.
     commands.spawn((
         Camera3d::default(),
+        Projection::Perspective(PerspectiveProjection {
+            // The default 10cm near plane made close inspection feel like
+            // "zoom stopped early" on small robotics/USD details. Keep it
+            // tight so the arcball can dolly into millimetre-scale features.
+            near: 0.0001,
+            ..default()
+        }),
         Hdr,
         // AgX is the modern filmic curve Blender / Krita default to.
         // ACES is more contrasty + clips highlights harder; with a
@@ -452,7 +459,12 @@ fn spawn_camera_and_ground(mut commands: Commands) {
 /// whether transforms are off, payloads failed, or a specific prop
 /// landed at the wrong scale.
 fn debug_dump_layout_once(
-    prims: Query<(&UsdPrimRef, &GlobalTransform, &Transform, Option<&bevy::mesh::Mesh3d>)>,
+    prims: Query<(
+        &UsdPrimRef,
+        &GlobalTransform,
+        &Transform,
+        Option<&bevy::mesh::Mesh3d>,
+    )>,
     extent: Res<SceneExtent>,
     mut done: Local<bool>,
 ) {
@@ -646,9 +658,7 @@ fn debug_dump_physics_once(
             }
         }
     }
-    info!(
-        "  → {with} mesh(es) under a body, {without} mesh(es) NOT under any body"
-    );
+    info!("  → {with} mesh(es) under a body, {without} mesh(es) NOT under any body");
     info!("---- Colliders vs. body ancestry ----");
     let mut col_rows: Vec<_> = colliders.iter().collect();
     col_rows.sort_by_key(|(_, pr)| pr.map(|p| p.path.clone()).unwrap_or_default());
@@ -676,7 +686,11 @@ fn debug_dump_physics_tick(
     prim_refs: Query<&UsdPrimRef>,
     mut counter: Local<u32>,
 ) {
-    if std::env::var("BEVY_OPENUSD_DEBUG_PHYSICS_TICK").ok().as_deref() != Some("1") {
+    if std::env::var("BEVY_OPENUSD_DEBUG_PHYSICS_TICK")
+        .ok()
+        .as_deref()
+        != Some("1")
+    {
         return;
     }
     *counter += 1;
@@ -804,20 +818,16 @@ fn fit_camera_once(
     let effective = diag.max(2.0);
     cam.distance = effective * 1.1;
     cam.max_distance = cam.distance.max(cam.max_distance) * 4.0;
-    // Scale the zoom-in clamp to the scene size: 0.1% of the diagonal
+    // Scale the zoom-in clamp to the scene size: 0.005% of the diagonal
     // floors at 1mm so a 100m greenhouse can still be inspected at
-    // sub-cm detail and a 30cm asset doesn't refuse to zoom past 20cm
+    // millimetre detail and a 30cm asset doesn't refuse to zoom past 20cm
     // (the original 0.2m default). Matches the camera-distance scaling
     // above so dolly stops just before the mesh.
-    cam.min_distance = (effective * 0.001).max(0.001);
+    cam.min_distance = (effective * 0.00005).max(0.001);
     *done = true;
     info!(
         "camera framed on scene: focus={:?}, diag={:.2} m (effective={:.2} m), {} prims (waited {} ticks)",
-        cam.focus,
-        diag,
-        effective,
-        extent.count,
-        *wait_ticks
+        cam.focus, diag, effective, extent.count, *wait_ticks
     );
 }
 
@@ -1275,7 +1285,9 @@ fn sweep_variant_tempfiles(requested: Res<RequestedAsset>) {
     };
     for entry in entries.flatten() {
         let name_os = entry.file_name();
-        let Some(name) = name_os.to_str() else { continue };
+        let Some(name) = name_os.to_str() else {
+            continue;
+        };
         if name.starts_with(".bevy_openusd_variant_") {
             let _ = std::fs::remove_file(entry.path());
         }
@@ -1310,10 +1322,7 @@ fn unique_variant_basename(
 /// Ensure `dest` exists and mirrors `source`'s bytes. We re-copy only
 /// when the destination is missing or stale compared to the source's
 /// modification time.
-fn ensure_variant_copy(
-    source: &std::path::Path,
-    dest: &std::path::Path,
-) -> std::io::Result<()> {
+fn ensure_variant_copy(source: &std::path::Path, dest: &std::path::Path) -> std::io::Result<()> {
     let needs_copy = match (source.metadata(), dest.metadata()) {
         (Ok(s), Ok(d)) => match (s.modified().ok(), d.modified().ok()) {
             (Some(s_mt), Some(d_mt)) => s_mt > d_mt,
@@ -1453,14 +1462,9 @@ fn drive_skel_animations(
         let mut misses = 0usize;
         // Sample joint 0's local Transform translation BEFORE applying
         // — to verify driver actually changes values across frames.
-        let probe_je = driver
-            .joint_entities
-            .iter()
-            .skip(10)
-            .find_map(|e| *e);
-        let before: Option<(bevy::math::Vec3, bevy::math::Quat)> = probe_je.and_then(|je| {
-            joints.get(je).ok().map(|t| (t.translation, t.rotation))
-        });
+        let probe_je = driver.joint_entities.iter().skip(10).find_map(|e| *e);
+        let before: Option<(bevy::math::Vec3, bevy::math::Quat)> =
+            probe_je.and_then(|je| joints.get(je).ok().map(|t| (t.translation, t.rotation)));
         for (channel_ix, joint_entity) in driver.joint_entities.iter().enumerate() {
             let Some(je) = joint_entity else {
                 misses += 1;
@@ -1473,9 +1477,8 @@ fn drive_skel_animations(
             evaluated[channel_ix].apply(&mut tr);
             hits += 1;
         }
-        let after: Option<(bevy::math::Vec3, bevy::math::Quat)> = probe_je.and_then(|je| {
-            joints.get(je).ok().map(|t| (t.translation, t.rotation))
-        });
+        let after: Option<(bevy::math::Vec3, bevy::math::Quat)> =
+            probe_je.and_then(|je| joints.get(je).ok().map(|t| (t.translation, t.rotation)));
         if !*diag_emitted && (hits > 0 || misses > 0) {
             info!(
                 "skel anim: first-tick wrote {hits}/{} joints (missed {misses}); probe before={before:?} after={after:?} tc={tc:.2}",
@@ -1483,10 +1486,7 @@ fn drive_skel_animations(
             );
             *diag_emitted = true;
         } else if *tick % 30 == 0 {
-            info!(
-                "skel anim tick={} tc={tc:.2} probe={after:?}",
-                *tick
-            );
+            info!("skel anim tick={} tc={tc:.2} probe={after:?}", *tick);
         }
     }
 }
@@ -1502,7 +1502,6 @@ fn setup_skeleton_gizmos_on_top(mut store: ResMut<GizmoConfigStore>) {
     let (cfg, _) = store.config_mut::<SkeletonGizmos>();
     cfg.depth_bias = -1.0;
 }
-
 
 /// Draw bone gizmos for every UsdSkel skeleton in the scene: a line
 /// from each `UsdJoint` to each of its `UsdJoint` children. Drives

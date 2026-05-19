@@ -130,11 +130,8 @@ fn sync_bodies_to_transforms_on_resume(
     }
     use rapier3d_f64::prelude::*;
     let world = world.as_mut();
-    let pairs: Vec<(Entity, RigidBodyHandle)> = world
-        .entity_to_body
-        .iter()
-        .map(|(e, h)| (*e, *h))
-        .collect();
+    let pairs: Vec<(Entity, RigidBodyHandle)> =
+        world.entity_to_body.iter().map(|(e, h)| (*e, *h)).collect();
     for (entity, handle) in pairs {
         let Ok(gt) = transforms.get(entity) else {
             continue;
