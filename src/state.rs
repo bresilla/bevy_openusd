@@ -146,6 +146,15 @@ impl LoaderTuning {
     }
 }
 
+/// One-frame request to switch the active `UsdSkelAnimation` clip without
+/// rebuilding the USD stage. The heavy variant reload path is still used for
+/// real geometry/material variants; animation clips only swap data inside the
+/// live `UsdSkelAnimDriver` components.
+#[derive(Resource, Default, Debug, Clone)]
+pub struct PendingAnimationClip {
+    pub name: Option<String>,
+}
+
 /// Curve / point rendering defaults. Not a Resource on its own — lives
 /// inside [`LoaderTuning`]. Split so the rebuild-tuned-meshes system
 /// can diff a lightweight `Copy` key without cloning the variant map.

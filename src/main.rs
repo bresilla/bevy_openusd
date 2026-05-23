@@ -34,8 +34,8 @@ use crate::camera::{ArcballCamera, ArcballCameraPlugin};
 use crate::keyboard::ViewerKeyboardPlugin;
 use crate::overlays::{OverlaysPlugin, SceneExtent};
 use crate::state::{
-    CameraBookmarks, CameraMount, FlyTo, LoadRequest, LoaderTuning, ReloadRequest, SelectedPrim,
-    StageInfo, UsdStageTime,
+    CameraBookmarks, CameraMount, FlyTo, LoadRequest, LoaderTuning, PendingAnimationClip,
+    ReloadRequest, SelectedPrim, StageInfo, UsdStageTime,
 };
 use crate::ui::{RIB_TREE, RIBBON_LEFT, ViewerUiPlugin};
 use bevy_glacial::prelude::{
@@ -132,6 +132,7 @@ fn main() {
         .init_resource::<FlyTo>()
         .init_resource::<CameraMount>()
         .init_resource::<LoaderTuning>()
+        .init_resource::<PendingAnimationClip>()
         .init_resource::<UsdStageTime>()
         .init_resource::<CameraBookmarks>()
         .add_systems(Startup, open_default_panel)
@@ -171,7 +172,8 @@ fn main() {
                 sync_chase_camera,
                 sync_ground_grid_visibility,
             ),
-        );
+        )
+        .add_systems(Update, apply_live_animation_clip);
     let hide_meshes = std::env::var("BEVY_OPENUSD_HIDE_MESHES")
         .ok()
         .map(|v| matches!(v.as_str(), "1" | "true" | "on"))
@@ -288,10 +290,19 @@ fn load_stage(
 /// launches the chassis on tick 0.
 fn lift_scene_off_ground(
     extent: Res<crate::overlays::SceneExtent>,
+    physics_active: Res<usd_bevy::physics::PhysicsActive>,
     mut scene_roots: Query<&mut Transform, With<SceneRoot>>,
     mut done: Local<bool>,
 ) {
     if *done || extent.count == 0 {
+        return;
+    }
+    let force_lift = std::env::var("BEVY_OPENUSD_AUTO_LIFT")
+        .ok()
+        .map(|v| matches!(v.as_str(), "1" | "true" | "on"))
+        .unwrap_or(false);
+    if !physics_active.0 && !force_lift {
+        *done = true;
         return;
     }
     // Wait until the bbox has settled (more than a couple prims), so
@@ -930,6 +941,7 @@ fn spawn_when_ready(
     asset_server: Res<AssetServer>,
     assets: Res<Assets<UsdAsset>>,
     stage: Res<StageHandle>,
+    requested: Res<RequestedAsset>,
     mut spawned: ResMut<Spawned>,
     mut info: ResMut<StageInfo>,
     default_suns: Query<Entity, With<DefaultSun>>,
@@ -988,6 +1000,7 @@ fn spawn_when_ready(
             info.clip_prim_count = asset.clip_sets.len();
             commands.spawn(SceneRoot(asset.scene.clone()));
             spawned.0 = true;
+            sweep_variant_tempfiles_in_root(&requested.root);
         }
         Some(LoadState::Failed(err)) => {
             error!("UsdAsset load failed: {err}");
@@ -1280,7 +1293,11 @@ fn draw_selected_prim_highlight(
 /// `load_stage` queues the initial load, so the subsequent fresh
 /// copies are the only ones on disk.
 fn sweep_variant_tempfiles(requested: Res<RequestedAsset>) {
-    let Ok(entries) = std::fs::read_dir(&requested.root) else {
+    sweep_variant_tempfiles_in_root(&requested.root);
+}
+
+fn sweep_variant_tempfiles_in_root(root: &std::path::Path) {
+    let Ok(entries) = std::fs::read_dir(root) else {
         return;
     };
     for entry in entries.flatten() {
@@ -1447,6 +1464,124 @@ fn evaluate_animated_prims(
 ///
 /// Skips the eval when no driver is present (no animation loaded), so
 /// the cost on non-animated scenes is one `Query::iter()` per frame.
+fn apply_live_animation_clip(
+    mut pending: ResMut<PendingAnimationClip>,
+    stage: Option<Res<StageHandle>>,
+    assets: Res<Assets<UsdAsset>>,
+    mut drivers: Query<&mut usd_bevy::prim_ref::UsdSkelAnimDriver>,
+    mut clock: ResMut<UsdStageTime>,
+) {
+    let Some(clip) = pending.name.take() else {
+        return;
+    };
+    let Some(stage) = stage else {
+        pending.name = Some(clip);
+        return;
+    };
+    let Some(asset) = assets.get(&stage.0) else {
+        pending.name = Some(clip);
+        return;
+    };
+    let Some(anim) = asset.skel_animations.get(&clip) else {
+        warn!("animation switch: clip {clip:?} was not found in loaded UsdAsset");
+        return;
+    };
+
+    let mut updated = 0usize;
+    for mut driver in drivers.iter_mut() {
+        let anim_to_skel: Vec<Option<Entity>> = anim
+            .joints
+            .iter()
+            .map(|jp| {
+                driver
+                    .skeleton_joints
+                    .iter()
+                    .position(|sp| sp == jp)
+                    .and_then(|i| driver.skeleton_joint_entities.get(i).copied().flatten())
+            })
+            .collect();
+        let mapped = anim_to_skel.iter().filter(|e| e.is_some()).count();
+        if mapped == 0 && !anim.joints.is_empty() {
+            warn!(
+                "animation switch: clip {clip:?} did not map to this skeleton ({} channels)",
+                anim.joints.len()
+            );
+            continue;
+        }
+
+        driver.anim_name = anim.prim_name.clone();
+        driver.joint_entities = anim_to_skel;
+        driver.translations = anim
+            .translations
+            .iter()
+            .map(|(t, v)| (t.0, v.clone()))
+            .collect();
+        driver.rotations = anim
+            .rotations
+            .iter()
+            .map(|(t, v)| (t.0, v.clone()))
+            .collect();
+        driver.scales = anim.scales.iter().map(|(t, v)| (t.0, v.clone())).collect();
+        driver.blend_shape_names = anim.blend_shapes.clone();
+        driver.blend_shape_weights = anim
+            .blend_shape_weights
+            .iter()
+            .map(|(t, v)| (t.0, v.clone()))
+            .collect();
+        driver.quat_xyzw_order = detect_quat_xyzw_order(anim);
+        updated += 1;
+        info!(
+            "animation switch: live-swapped to {} (mapped {mapped}/{} channels)",
+            anim.prim_name,
+            anim.joints.len()
+        );
+    }
+
+    if updated > 0 {
+        if let Some((start, end)) = skel_anim_time_range(anim) {
+            clock.start_time_code = start;
+            clock.end_time_code = end.max(start + 1.0);
+            clock.seconds = 0.0;
+            clock.initialized = true;
+        } else {
+            clock.seconds = 0.0;
+        }
+    } else {
+        warn!("animation switch: no live UsdSkelAnimDriver accepted clip {clip:?}");
+    }
+}
+
+fn detect_quat_xyzw_order(anim: &usd_schema::skel_anim_text::ReadSkelAnimText) -> bool {
+    let mut sum_abs_first = 0.0f32;
+    let mut sum_abs_last = 0.0f32;
+    let mut samples = 0usize;
+    if let Some((_, first_rot)) = anim.rotations.iter().next() {
+        for q in first_rot {
+            sum_abs_first += q[0].abs();
+            sum_abs_last += q[3].abs();
+            samples += 1;
+        }
+    }
+    samples > 0 && sum_abs_last > sum_abs_first
+}
+
+fn skel_anim_time_range(anim: &usd_schema::skel_anim_text::ReadSkelAnimText) -> Option<(f64, f64)> {
+    let mut start = f64::INFINITY;
+    let mut end = f64::NEG_INFINITY;
+    for t in anim
+        .translations
+        .iter()
+        .map(|(t, _)| t.0)
+        .chain(anim.rotations.iter().map(|(t, _)| t.0))
+        .chain(anim.scales.iter().map(|(t, _)| t.0))
+        .chain(anim.blend_shape_weights.iter().map(|(t, _)| t.0))
+    {
+        start = start.min(t);
+        end = end.max(t);
+    }
+    start.is_finite().then_some((start, end))
+}
+
 fn drive_skel_animations(
     clock: Res<UsdStageTime>,
     drivers: Query<&usd_bevy::prim_ref::UsdSkelAnimDriver>,

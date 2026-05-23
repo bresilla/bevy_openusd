@@ -10,12 +10,16 @@ TOP_DIR := $(CURDIR)
 CARGO := cargo
 BACKEND ?= wayland
 DISPLAY ?= :1
+WAYLAND_DISPLAY ?= wayland-0
 APP_TARGET := --bin usdview
 RUN_WITH ?= nixVulkan
 ARGS ?=
 TYPE ?= patch
 HAS_REL := $(shell command -v git-rel 2>/dev/null)
 RUN_ENV := WINIT_UNIX_BACKEND=$(BACKEND)
+ifeq ($(BACKEND),wayland)
+RUN_ENV += WAYLAND_DISPLAY=$(WAYLAND_DISPLAY)
+endif
 ifeq ($(BACKEND),x11)
 RUN_ENV += DISPLAY=$(DISPLAY)
 endif
@@ -117,6 +121,7 @@ help:
 	@echo
 	@echo "Examples:"
 	@echo "  make run"
+	@echo "  make run WAYLAND_DISPLAY=wayland-1 # force a specific Wayland socket"
 	@echo "  make run BACKEND=x11          # force X11 / XWayland (.envrc auto-detects)"
 	@echo "  make run BACKEND=wayland      # force native Wayland"
 	@echo "  make run DISPLAY=:0           # target a different X server (BACKEND=x11)"

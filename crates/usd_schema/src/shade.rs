@@ -585,6 +585,44 @@ fn resolve_surface_shader(
             return Ok(Some((t.prim_path(), dialect)));
         }
     }
+    // Some Omniverse/USDC layers expose the Material and child Shader
+    // but not the `outputs:mdl:surface.connect` relationship through
+    // the lightweight field reader. Fall back to scanning direct child
+    // shaders and infer the dialect from their authored identifiers.
+    for child in stage.prim_children(material.clone()).unwrap_or_default() {
+        let shader = material
+            .append_path(child.as_str())
+            .map_err(anyhow::Error::from)?;
+        let type_name = stage
+            .field::<String>(shader.clone(), "typeName")
+            .map_err(anyhow::Error::from)?
+            .unwrap_or_default();
+        if type_name != "Shader" {
+            continue;
+        }
+        let shader_id = read_scalar_token(stage, &shader, "info:id")?;
+        let mdl_subid = read_scalar_token(stage, &shader, "info:mdl:sourceAsset:subIdentifier")?;
+        let mdl_source = read_scalar_asset(stage, &shader, "info:mdl:sourceAsset")?;
+        if mdl_subid.is_some() || mdl_source.is_some() {
+            return Ok(Some((shader, SurfaceDialect::Mdl)));
+        }
+        if matches!(
+            shader_id.as_deref(),
+            Some("UsdPreviewSurface")
+                | Some("ND_UsdPreviewSurface_surfaceshader")
+                | Some("OmniPBR")
+                | Some("OmniPBR_Opacity")
+                | Some("OmniPBR_ClearCoat")
+        ) {
+            return Ok(Some((shader, SurfaceDialect::Preview)));
+        }
+        if matches!(
+            shader_id.as_deref(),
+            Some("ND_standard_surface_surfaceshader")
+        ) {
+            return Ok(Some((shader, SurfaceDialect::MaterialX)));
+        }
+    }
     Ok(None)
 }
 

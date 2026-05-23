@@ -72,6 +72,16 @@ pub struct UsdBlendShapeBinding {
 #[derive(Component, Reflect, Clone, Default)]
 #[reflect(Component, Default)]
 pub struct UsdSkelAnimDriver {
+    /// Current clip name, usually the `SkelAnimation` prim name.
+    pub anim_name: String,
+    /// Skeleton joint paths in skeleton order. Stored so the viewer can swap
+    /// animation clips live without rebuilding the whole USD stage.
+    pub skeleton_joints: Vec<String>,
+    /// Skeleton joint entities in skeleton order. `joint_entities` below is
+    /// derived from this per active clip because different clips may author
+    /// channels in a different order.
+    #[entities]
+    pub skeleton_joint_entities: Vec<Option<bevy::ecs::entity::Entity>>,
     /// One entry per animation channel (i.e. animation's `joints`
     /// array length). `None` when the animation references a joint
     /// the bound Skeleton doesn't have. `#[entities]` tells the

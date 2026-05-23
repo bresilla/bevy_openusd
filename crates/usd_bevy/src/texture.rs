@@ -99,6 +99,18 @@ pub fn load_texture(
     None
 }
 
+/// Cheap, quiet texture probe for heuristic callers.
+///
+/// `load_texture` deliberately warns on a miss because an authored USD texture
+/// path failing to resolve is usually actionable. Name-based recovery code,
+/// however, tries optional convention guesses like
+/// `Material_AO.png`/`Material_Roughness.png`; those misses are expected and
+/// should not look like broken authored materials in the log.
+pub fn can_resolve_texture(ctx: &mut BuildCtx<'_, '_>, raw_path: &str) -> bool {
+    let clean = raw_path.strip_prefix("./").unwrap_or(raw_path).to_string();
+    lookup_embedded(ctx.embedded, &clean).is_some() || locate_on_filesystem(ctx, &clean).is_some()
+}
+
 /// Composite separately-authored roughness + metallic textures into
 /// the single packed RGBA image Bevy's `StandardMaterial` consumes
 /// (glTF convention: R unused, G = roughness, B = metallic, A = 1.0).

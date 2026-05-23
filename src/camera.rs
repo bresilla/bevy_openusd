@@ -8,8 +8,8 @@
 //! Run conditions yield to egui when a panel wants the pointer, so orbiting
 //! doesn't fight with panel scroll / sliders.
 
-use bevy::input::mouse::{AccumulatedMouseScroll, MouseScrollUnit};
 use bevy::camera::Projection;
+use bevy::input::mouse::{AccumulatedMouseScroll, MouseScrollUnit};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::input::egui_wants_any_pointer_input;
@@ -124,8 +124,7 @@ fn drive_arcball(
 
     for (mut tr, mut cam, projection) in cameras.iter_mut() {
         if pan_delta != Vec2::ZERO {
-            let pan_world =
-                screen_space_pan_delta(&tr, &cam, projection, pan_delta, window_height);
+            let pan_world = screen_space_pan_delta(&tr, &cam, projection, pan_delta, window_height);
             cam.focus += pan_world;
         }
         if orbit_delta != Vec2::ZERO {

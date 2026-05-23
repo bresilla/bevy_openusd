@@ -440,7 +440,7 @@ impl AssetLoader for UsdLoader {
 
         let default_prim = stage.default_prim();
         let layer_count = stage.layer_count();
-        let variants = collect_variants(&stage);
+        let mut variants = collect_variants(&stage);
         let cameras = collect_cameras(&stage);
         let (curves, points_clouds) = collect_curves_and_points(&stage);
         let animated_prims = collect_animated_prims(&stage);
@@ -487,10 +487,10 @@ impl AssetLoader for UsdLoader {
                 collect_text_layers_recursive(parent, &mut anim_paths);
             }
         }
-        let stage_authored_timeline = end_time_code > start_time_code;
+        let stage_authored_timeline = has_authored_timeline(&stage);
         let mut anim_min_time: Option<f64> = None;
         let mut anim_max_time: Option<f64> = None;
-        let mut record_time = |t: f64, mn: &mut Option<f64>, mx: &mut Option<f64>| {
+        let record_time = |t: f64, mn: &mut Option<f64>, mx: &mut Option<f64>| {
             *mn = Some(mn.map(|m| m.min(t)).unwrap_or(t));
             *mx = Some(mx.map(|m| m.max(t)).unwrap_or(t));
         };
@@ -539,11 +539,32 @@ impl AssetLoader for UsdLoader {
                 }
             }
         }
+        for a in collect_stage_skel_animations(&stage) {
+            for k in a.translations.keys() {
+                record_time(k.0, &mut anim_min_time, &mut anim_max_time);
+            }
+            for k in a.rotations.keys() {
+                record_time(k.0, &mut anim_min_time, &mut anim_max_time);
+            }
+            for k in a.scales.keys() {
+                record_time(k.0, &mut anim_min_time, &mut anim_max_time);
+            }
+            for k in a.blend_shape_weights.keys() {
+                record_time(k.0, &mut anim_min_time, &mut anim_max_time);
+            }
+            skel_animations.insert(a.prim_name.clone(), a);
+        }
+        synthesize_anim_variant_set(
+            &mut variants,
+            default_prim.as_deref(),
+            &skel_animations,
+            &effective_variants,
+        );
         // When the stage authored no timeline, derive playback range
-        // from the sidecar's authored keyframes — exactly matches
-        // walk.usd's frame 101..129 for HumanFemale, so the playhead
-        // doesn't sit at frame 0 (where the bracket holds the first
-        // keyframe and animation appears stalled).
+        // from the authored keyframes. This covers both sidecar USDA
+        // animations and composed stage SkelAnimation prims referenced
+        // by wrapper assets such as Cow_F.usd, whose root layer authors
+        // an `anim` variant set but no start/end time codes.
         if !stage_authored_timeline {
             if let (Some(mn), Some(mx)) = (anim_min_time, anim_max_time) {
                 start_time_code = mn;
@@ -1109,6 +1130,81 @@ fn read_stage_timeline(stage: &openusd::Stage) -> (f64, f64, f64) {
         .unwrap_or(24.0)
         .max(1e-3);
     (start, end, tcps)
+}
+
+fn has_authored_timeline(stage: &openusd::Stage) -> bool {
+    use openusd::sdf::{Path, Value};
+    let has_numeric = |key: &str| -> bool {
+        matches!(
+            stage.field::<Value>(Path::abs_root(), key).ok().flatten(),
+            Some(Value::Double(_) | Value::Float(_) | Value::Int(_) | Value::TimeCode(_))
+        )
+    };
+    has_numeric("startTimeCode") || has_numeric("endTimeCode")
+}
+
+fn collect_stage_skel_animations(
+    stage: &openusd::Stage,
+) -> Vec<usd_schema::skel_anim_text::ReadSkelAnimText> {
+    use openusd::sdf::Path;
+    let mut out = Vec::new();
+    let _ = stage.traverse(|path: &Path| {
+        if let Ok(Some(anim)) = usd_schema::skel::read_skel_animation_stage(stage, path) {
+            let has_samples = !anim.translations.is_empty()
+                || !anim.rotations.is_empty()
+                || !anim.scales.is_empty()
+                || !anim.blend_shape_weights.is_empty();
+            if has_samples {
+                out.push(anim);
+            }
+        }
+    });
+    out
+}
+
+fn synthesize_anim_variant_set(
+    variants: &mut HashMap<String, Vec<VariantSet>>,
+    default_prim: Option<&str>,
+    skel_animations: &HashMap<String, usd_schema::skel_anim_text::ReadSkelAnimText>,
+    effective_variants: &[VariantSelection],
+) {
+    if skel_animations.is_empty() {
+        return;
+    }
+    let Some(default_prim) = default_prim else {
+        return;
+    };
+    let prim_path = format!("/{default_prim}");
+    let mut options: Vec<String> = skel_animations.keys().cloned().collect();
+    options.sort();
+
+    let selected = effective_variants
+        .iter()
+        .find(|v| v.prim_path == prim_path && v.set_name == "anim")
+        .map(|v| v.option.clone())
+        .or_else(|| {
+            if options.iter().any(|o| o == "Stand_00") {
+                Some("Stand_00".to_string())
+            } else {
+                options.first().cloned()
+            }
+        });
+
+    let sets = variants.entry(prim_path).or_default();
+    if let Some(existing) = sets.iter_mut().find(|set| set.name == "anim") {
+        if existing.options.is_empty() {
+            existing.options = options;
+        }
+        if existing.selection.is_none() {
+            existing.selection = selected;
+        }
+    } else {
+        sets.push(VariantSet {
+            name: "anim".to_string(),
+            selection: selected,
+            options,
+        });
+    }
 }
 
 /// Walk the composed stage and collect every `UsdGeom.Camera` prim. The
